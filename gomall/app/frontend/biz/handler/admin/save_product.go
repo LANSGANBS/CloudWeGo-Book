@@ -28,16 +28,21 @@ import (
 )
 
 type Product struct {
-	ID          int            `gorm:"primaryKey"`
-	Name        string         `json:"name"`
-	Description string         `json:"description"`
-	Picture     string         `json:"picture"`
-	Price       float32        `json:"price"`
-	Stock       int64          `json:"stock" gorm:"-"`
-	Categories  []Category     `json:"categories" gorm:"many2many:product_category"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	ID                int            `gorm:"primaryKey"`
+	Name              string         `json:"name"`
+	Description       string         `json:"description"`
+	Picture           string         `json:"picture"`
+	Price             float32        `json:"price"`
+	DiscountType      int8           `json:"discount_type"`
+	DiscountValue     float32        `json:"discount_value"`
+	DiscountStartTime *time.Time     `json:"discount_start_time"`
+	DiscountEndTime   *time.Time     `json:"discount_end_time"`
+	OriginalPrice     *float32       `json:"original_price"`
+	Stock             int64          `json:"stock" gorm:"-"`
+	Categories        []Category     `json:"categories" gorm:"many2many:product_category"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
+	DeletedAt         gorm.DeletedAt `gorm:"index"`
 }
 
 func (Product) TableName() string {
@@ -65,6 +70,10 @@ func SaveProduct(ctx context.Context, c *app.RequestContext) {
 	picture := c.PostForm("picture")
 	category := c.PostForm("category")
 	stockStr := c.PostForm("stock")
+	discountTypeStr := c.PostForm("discount_type")
+	discountValueStr := c.PostForm("discount_value")
+	discountStartTimeStr := c.PostForm("discount_start_time")
+	discountEndTimeStr := c.PostForm("discount_end_time")
 
 	if name == "" {
 		c.JSON(consts.StatusBadRequest, hertzutils.H{
@@ -130,6 +139,46 @@ func SaveProduct(ctx context.Context, c *app.RequestContext) {
 		}
 	}
 
+	var discountType int8 = 0
+	if discountTypeStr != "" {
+		dt, err := strconv.ParseInt(discountTypeStr, 10, 8)
+		if err != nil {
+			c.JSON(consts.StatusBadRequest, hertzutils.H{
+				"success": false,
+				"message": "折扣类型格式错误",
+			})
+			return
+		}
+		discountType = int8(dt)
+	}
+
+	var discountValue float32 = 0
+	if discountValueStr != "" {
+		dv, err := strconv.ParseFloat(discountValueStr, 32)
+		if err != nil {
+			c.JSON(consts.StatusBadRequest, hertzutils.H{
+				"success": false,
+				"message": "折扣值格式错误",
+			})
+			return
+		}
+		discountValue = float32(dv)
+	}
+
+	var discountStartTime, discountEndTime *time.Time
+	if discountStartTimeStr != "" {
+		t, err := time.Parse("2006-01-02T15:04", discountStartTimeStr)
+		if err == nil {
+			discountStartTime = &t
+		}
+	}
+	if discountEndTimeStr != "" {
+		t, err := time.Parse("2006-01-02T15:04", discountEndTimeStr)
+		if err == nil {
+			discountEndTime = &t
+		}
+	}
+
 	db, err := utils.GetProductDB()
 	if err != nil {
 		c.JSON(consts.StatusInternalServerError, hertzutils.H{
@@ -149,7 +198,6 @@ func SaveProduct(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 编辑模式
 	if idStr != "" {
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
@@ -170,14 +218,23 @@ func SaveProduct(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		// 更新商品基本信息
 		existingProduct.Name = name
 		existingProduct.Description = description
 		existingProduct.Price = float32(price)
 		existingProduct.Picture = picture
+		existingProduct.DiscountType = discountType
+		existingProduct.DiscountValue = discountValue
+		existingProduct.DiscountStartTime = discountStartTime
+		existingProduct.DiscountEndTime = discountEndTime
 		existingProduct.UpdatedAt = time.Now()
+		
+		if discountType != 0 && existingProduct.OriginalPrice == nil {
+			op := float32(price)
+			existingProduct.OriginalPrice = &op
+		} else if discountType == 0 {
+			existingProduct.OriginalPrice = nil
+		}
 
-		// 更新商品分类关联
 		err = db.Model(&existingProduct).Association("Categories").Replace(&cat)
 		if err != nil {
 			hlog.CtxErrorf(ctx, "failed to update product categories: %v", err)
@@ -198,7 +255,6 @@ func SaveProduct(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 
-		// 更新库存
 		err = updateOrCreateStock(db, uint32(id), stock)
 		if err != nil {
 			hlog.CtxErrorf(ctx, "failed to update stock: %v", err)
@@ -211,16 +267,24 @@ func SaveProduct(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 新增模式
 	now := time.Now()
 	product := Product{
-		Name:        name,
-		Description: description,
-		Price:       float32(price),
-		Picture:     picture,
-		Categories:  []Category{cat},
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		Name:              name,
+		Description:       description,
+		Price:             float32(price),
+		Picture:           picture,
+		DiscountType:      discountType,
+		DiscountValue:     discountValue,
+		DiscountStartTime: discountStartTime,
+		DiscountEndTime:   discountEndTime,
+		Categories:        []Category{cat},
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+	
+	if discountType != 0 {
+		op := float32(price)
+		product.OriginalPrice = &op
 	}
 
 	err = db.Create(&product).Error
@@ -233,7 +297,6 @@ func SaveProduct(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 创建库存记录
 	err = updateOrCreateStock(db, uint32(product.ID), stock)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "failed to create stock: %v", err)

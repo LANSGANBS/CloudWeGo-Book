@@ -66,6 +66,108 @@
             font-weight: 600;
         }
         .product-price-value::before { content: '¥'; font-size: 18px; }
+        
+        .flash-sale-section {
+            background: linear-gradient(135deg, #ff4d4f, #ff7875);
+            border-radius: var(--border-radius-sm);
+            padding: 16px;
+            margin-bottom: 16px;
+            color: white;
+        }
+        .flash-sale-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .flash-sale-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .flash-sale-title i {
+            animation: flash 1s infinite;
+        }
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .flash-sale-countdown {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+        }
+        .countdown-box {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            min-width: 32px;
+            text-align: center;
+        }
+        .flash-sale-prices {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+        .flash-sale-price {
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .flash-sale-price::before { content: '¥'; font-size: 20px; }
+        .flash-sale-original {
+            font-size: 16px;
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+        .flash-sale-discount {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .discount-section {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-radius: var(--border-radius-sm);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .discount-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .discount-badge {
+            background: #ff9800;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .discount-prices {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+        .discount-price {
+            font-size: 28px;
+            color: #ff4d4f;
+            font-weight: 600;
+        }
+        .discount-price::before { content: '¥'; font-size: 18px; }
+        .original-price {
+            font-size: 16px;
+            color: #999;
+            text-decoration: line-through;
+        }
+        
         .product-meta-info {
             display: flex;
             gap: 16px;
@@ -214,7 +316,6 @@
         }
         .back-link:hover { color: var(--primary-color); }
         
-        /* 售罄遮罩样式 */
         .sold-out-overlay {
             position: absolute;
             inset: 0;
@@ -305,10 +406,50 @@
                 <h1 class="product-title">{{ .item.Name }}</h1>
                 <p class="product-desc">{{ .item.Description }}</p>
                 
+                {{ if gt .item.DiscountType 0 }}
+                    {{ if eq .item.DiscountStatus 2 }}
+                    <div class="flash-sale-section">
+                        <div class="flash-sale-header">
+                            <div class="flash-sale-title">
+                                <i class="fas fa-bolt"></i>
+                                <span>限时特惠</span>
+                            </div>
+                            <div class="flash-sale-countdown" id="countdown">
+                                <span>距结束</span>
+                                <span class="countdown-box" id="hours">00</span>:
+                                <span class="countdown-box" id="minutes">00</span>:
+                                <span class="countdown-box" id="seconds">00</span>
+                            </div>
+                        </div>
+                        <div class="flash-sale-prices">
+                            <span class="flash-sale-price">{{ printf "%.2f" .item.ActualPrice }}</span>
+                            <span class="flash-sale-original">¥{{ printf "%.2f" .item.Price }}</span>
+                            <span class="flash-sale-discount">{{ .item.DiscountLabel }}</span>
+                        </div>
+                    </div>
+                    {{ else if eq .item.DiscountStatus 4 }}
+                    <div class="discount-section">
+                        <div class="discount-header">
+                            <span class="discount-badge">{{ .item.DiscountLabel }}</span>
+                            <span style="color: #e65100; font-size: 14px;">优惠折扣</span>
+                        </div>
+                        <div class="discount-prices">
+                            <span class="discount-price">{{ printf "%.2f" .item.ActualPrice }}</span>
+                            <span class="original-price">¥{{ printf "%.2f" .item.Price }}</span>
+                        </div>
+                    </div>
+                    {{ else }}
+                    <div class="product-price-section">
+                        <div class="product-price-label">商品价格</div>
+                        <div class="product-price-value" id="unitPrice">{{ printf "%.2f" .item.Price }}</div>
+                    </div>
+                    {{ end }}
+                {{ else }}
                 <div class="product-price-section">
                     <div class="product-price-label">商品价格</div>
                     <div class="product-price-value" id="unitPrice">{{ printf "%.2f" .item.Price }}</div>
                 </div>
+                {{ end }}
 
                 <div class="product-meta-info">
                     <div class="product-meta-item">
@@ -347,7 +488,7 @@
 
                     <div class="total-price-section">
                         <span class="total-price-label">小计:</span>
-                        <span class="total-price-value" id="totalPrice">{{ printf "%.2f" .item.Price }}</span>
+                        <span class="total-price-value" id="totalPrice">{{ printf "%.2f" .item.ActualPrice }}</span>
                     </div>
 
                     <div class="action-buttons">
@@ -361,7 +502,7 @@
     </div>
 
     <script>
-        var unitPrice = {{ .item.Price }};
+        var unitPrice = {{ if gt .item.DiscountType 0 }}{{ if or (eq .item.DiscountStatus 2) (eq .item.DiscountStatus 4) }}{{ .item.ActualPrice }}{{ else }}{{ .item.Price }}{{ end }}{{ else }}{{ .item.Price }}{{ end }};
         var minQty = 1;
         var maxQty = 999;
         var stock = {{ .item.Stock }};
@@ -498,6 +639,30 @@
 
         updateTotalPrice();
         updateButtons();
+        
+        {{ if eq .item.DiscountStatus 2 }}
+        var endTime = {{ .item.DiscountEndTime }};
+        function updateCountdown() {
+            var now = Math.floor(Date.now() / 1000);
+            var remaining = endTime - now;
+            
+            if (remaining <= 0) {
+                document.getElementById('countdown').innerHTML = '<span style="color: rgba(255,255,255,0.8)">活动已结束</span>';
+                setTimeout(function() { location.reload(); }, 2000);
+                return;
+            }
+            
+            var hours = Math.floor(remaining / 3600);
+            var minutes = Math.floor((remaining % 3600) / 60);
+            var seconds = remaining % 60;
+            
+            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+        }
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+        {{ end }}
     </script>
 
     {{ template "footer" . }}

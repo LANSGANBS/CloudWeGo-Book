@@ -25,17 +25,59 @@ import (
 
 type ListProductsService struct {
 	ctx context.Context
-} // NewListProductsService new ListProductsService
+} 
+
 func NewListProductsService(ctx context.Context) *ListProductsService {
 	return &ListProductsService{ctx: ctx}
 }
 
-// Run create note info
+func convertProductToProto(v *model.Product, stock int64) *product.Product {
+	p := &product.Product{
+		Id:            uint32(v.ID),
+		Name:          v.Name,
+		Description:   v.Description,
+		Picture:       v.Picture,
+		Price:         v.Price,
+		Sales:         uint32(v.Sales),
+		Stock:         stock,
+		DiscountType:  int32(v.DiscountType),
+		DiscountValue: v.DiscountValue,
+		DiscountLabel: v.GetDiscountLabel(),
+		DiscountStatus: int32(v.GetDiscountStatus()),
+		ActualPrice:   v.GetActualPrice(),
+	}
+	
+	if v.DiscountStartTime != nil {
+		p.DiscountStartTime = v.DiscountStartTime.Unix()
+	}
+	if v.DiscountEndTime != nil {
+		p.DiscountEndTime = v.DiscountEndTime.Unix()
+	}
+	if v.OriginalPrice != nil {
+		p.OriginalPrice = *v.OriginalPrice
+	}
+	
+	return p
+}
+
 func (s *ListProductsService) Run(req *product.ListProductsReq) (resp *product.ListProductsResp, err error) {
 	resp = &product.ListProductsResp{}
 	stockService := NewStockService(s.ctx)
 
-	if req.CategoryName != "" {
+	if req.DiscountFilter > 0 {
+		products, err := model.GetProductsByDiscountFilter(mysql.DB, s.ctx, req.DiscountFilter)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range products {
+			var stock int64 = 999
+			stockData, _ := stockService.GetStock(uint32(v.ID))
+			if stockData != nil {
+				stock = stockData.Available
+			}
+			resp.Products = append(resp.Products, convertProductToProto(&v, stock))
+		}
+	} else if req.CategoryName != "" {
 		c, err := model.GetProductsByCategoryName(mysql.DB, s.ctx, req.CategoryName)
 		if err != nil {
 			return nil, err
@@ -47,38 +89,25 @@ func (s *ListProductsService) Run(req *product.ListProductsReq) (resp *product.L
 				if stockData != nil {
 					stock = stockData.Available
 				}
-				resp.Products = append(resp.Products, &product.Product{
-					Id:          uint32(v.ID),
-					Name:        v.Name,
-					Description: v.Description,
-					Picture:     v.Picture,
-					Price:       v.Price,
-					Sales:       uint32(v.Sales),
-					Stock:       stock,
-				})
+				resp.Products = append(resp.Products, convertProductToProto(&v, stock))
 			}
 		}
 	} else {
 		products, err := model.GetAllProductsOrderByTime(mysql.DB, s.ctx)
 		if err != nil {
+			klog.Errorf("ListProducts: failed to get all products: %v", err)
 			return nil, err
 		}
+		klog.Infof("ListProducts: found %d products from database", len(products))
 		for _, v := range products {
-			klog.Infof("ListProducts: Product ID=%d, Name=%s, Sales=%d, Price=%.2f", v.ID, v.Name, v.Sales, v.Price)
+			klog.Infof("ListProducts: Product ID=%d, Name=%s, Sales=%d, Price=%.2f, DiscountType=%d, DiscountStatus=%d", 
+				v.ID, v.Name, v.Sales, v.Price, v.DiscountType, v.GetDiscountStatus())
 			var stock int64 = 999
 			stockData, _ := stockService.GetStock(uint32(v.ID))
 			if stockData != nil {
 				stock = stockData.Available
 			}
-			resp.Products = append(resp.Products, &product.Product{
-				Id:          uint32(v.ID),
-				Name:        v.Name,
-				Description: v.Description,
-				Picture:     v.Picture,
-				Price:       v.Price,
-				Sales:       uint32(v.Sales),
-				Stock:       stock,
-			})
+			resp.Products = append(resp.Products, convertProductToProto(&v, stock))
 		}
 	}
 

@@ -33,12 +33,28 @@ func (c Category) TableName() string {
 
 func GetProductsByCategoryName(db *gorm.DB, ctx context.Context, name string) (category []Category, err error) {
 	err = db.WithContext(ctx).Model(&Category{}).Where(&Category{Name: name}).Preload("Products", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id, created_at, updated_at, name, description, picture, price, deleted_at, sales").Order("updated_at DESC")
+		return db.Select("id, created_at, updated_at, name, description, picture, price, discount_type, discount_value, discount_start_time, discount_end_time, original_price, deleted_at, sales").Order("updated_at DESC")
 	}).Find(&category).Error
 	return category, err
 }
 
 func GetAllProductsOrderByTime(db *gorm.DB, ctx context.Context) (products []Product, err error) {
-	err = db.WithContext(ctx).Model(&Product{}).Select("id, created_at, updated_at, name, description, picture, price, deleted_at, sales").Order("updated_at DESC").Find(&products).Error
+	err = db.WithContext(ctx).Model(&Product{}).Select("id, created_at, updated_at, name, description, picture, price, discount_type, discount_value, discount_start_time, discount_end_time, original_price, deleted_at, sales").Order("updated_at DESC").Find(&products).Error
+	return products, err
+}
+
+func GetProductsByDiscountFilter(db *gorm.DB, ctx context.Context, discountFilter int32) (products []Product, err error) {
+	query := db.WithContext(ctx).Model(&Product{}).Select("id, created_at, updated_at, name, description, picture, price, discount_type, discount_value, discount_start_time, discount_end_time, original_price, deleted_at, sales")
+	
+	switch discountFilter {
+	case 1:
+		query = query.Where("discount_type != 0")
+	case 2:
+		query = query.Where("discount_type != 0 AND discount_start_time IS NULL")
+	case 3:
+		query = query.Where("discount_type != 0 AND discount_start_time IS NOT NULL AND discount_end_time IS NOT NULL")
+	}
+	
+	err = query.Order("updated_at DESC").Find(&products).Error
 	return products, err
 }

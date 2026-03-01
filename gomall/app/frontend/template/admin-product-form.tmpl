@@ -44,6 +44,13 @@
         .image-item .check-icon { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background: var(--primary-color); border-radius: 50%; display: none; align-items: center; justify-content: center; color: white; font-size: 12px; }
         .image-item.selected .check-icon { display: flex; }
         
+        .discount-section { background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .discount-section .form-label { font-weight: 500; }
+        .price-preview { background: linear-gradient(135deg, #fff3e0, #ffe0b2); border-radius: 8px; padding: 12px; margin-top: 12px; }
+        .price-preview .original-price { text-decoration: line-through; color: #999; font-size: 14px; }
+        .price-preview .discount-price { color: #ff4d4f; font-size: 24px; font-weight: 600; }
+        .price-preview .discount-label { background: #ff4d4f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; }
+        
         @media (max-width: 991.98px) { .admin-sidebar { width: 100%; height: auto; position: relative; } .admin-main { margin-left: 0; } .admin-wrapper { flex-direction: column; } }
     </style>
 </head>
@@ -102,6 +109,62 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <div class="discount-section">
+                                <h6 class="mb-3"><i class="fas fa-percent me-1"></i>折扣设置</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="discountType" class="form-label">折扣类型</label>
+                                            <select class="form-select" id="discountType" name="discount_type">
+                                                <option value="0" {{if .product}}{{if eq .product.DiscountType 0}}selected{{end}}{{end}}>无折扣</option>
+                                                <option value="1" {{if .product}}{{if eq .product.DiscountType 1}}selected{{end}}{{end}}>折扣率(几折)</option>
+                                                <option value="2" {{if .product}}{{if eq .product.DiscountType 2}}selected{{end}}{{end}}>固定降价(减元)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="discountValue" class="form-label">折扣值</label>
+                                            <input type="number" class="form-control" id="discountValue" name="discount_value" step="0.01" min="0" value="{{if .product}}{{.product.DiscountValue}}{{end}}" placeholder="如: 0.8 或 10">
+                                            <div class="form-text">折扣率填0.8表示8折<br>固定降价填10表示减10元</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row" id="flashSaleTimeSection" style="display: none;">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="discountStartTime" class="form-label"><i class="fas fa-clock me-1"></i>限时特惠开始时间</label>
+                                            <input type="datetime-local" class="form-control" id="discountStartTime" name="discount_start_time" value="">
+                                            <div class="form-text">留空则为普通折扣(无限时长)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="discountEndTime" class="form-label"><i class="fas fa-clock me-1"></i>限时特惠结束时间</label>
+                                            <input type="datetime-local" class="form-control" id="discountEndTime" name="discount_end_time" value="">
+                                            <div class="form-text">限时特惠到期后自动恢复原价</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="isFlashSale">
+                                    <label class="form-check-label" for="isFlashSale">
+                                        <i class="fas fa-bolt text-warning me-1"></i>设为限时特惠
+                                    </label>
+                                </div>
+                                
+                                <div class="price-preview" id="pricePreview" style="display: none;">
+                                    <div class="d-flex align-items-center">
+                                        <span class="original-price" id="originalPriceDisplay">¥0.00</span>
+                                        <span class="discount-price ms-2" id="discountPriceDisplay">¥0.00</span>
+                                        <span class="discount-label" id="discountLabelDisplay">折扣</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
@@ -146,7 +209,9 @@
                                         <li class="mb-2"><i class="fas fa-check text-success me-1"></i> 商品名称应简洁明了</li>
                                         <li class="mb-2"><i class="fas fa-check text-success me-1"></i> 描述应详细说明商品特点</li>
                                         <li class="mb-2"><i class="fas fa-check text-success me-1"></i> 价格单位为人民币（元）</li>
-                                        <li><i class="fas fa-check text-success me-1"></i> 可从图片库选择或输入URL</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-1"></i> 可从图片库选择或输入URL</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-1"></i> 普通折扣无限时长</li>
+                                        <li><i class="fas fa-check text-success me-1"></i> 限时特惠到期自动恢复原价</li>
                                     </ul>
                                 </div>
                             </div>
@@ -206,6 +271,46 @@
                 setTimeout(function() { toast.remove(); }, 300);
             }, 2500);
         }
+        
+        function updatePricePreview() {
+            var price = parseFloat(document.getElementById('productPrice').value) || 0;
+            var discountType = parseInt(document.getElementById('discountType').value);
+            var discountValue = parseFloat(document.getElementById('discountValue').value) || 0;
+            var preview = document.getElementById('pricePreview');
+            
+            if (discountType === 0 || discountValue <= 0) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            var actualPrice = price;
+            var label = '';
+            
+            if (discountType === 1) {
+                actualPrice = price * discountValue;
+                label = Math.round(discountValue * 10) + '折';
+            } else if (discountType === 2) {
+                actualPrice = price - discountValue;
+                if (actualPrice < 0) actualPrice = 0;
+                label = '减' + discountValue + '元';
+            }
+            
+            document.getElementById('originalPriceDisplay').textContent = '¥' + price.toFixed(2);
+            document.getElementById('discountPriceDisplay').textContent = '¥' + actualPrice.toFixed(2);
+            document.getElementById('discountLabelDisplay').textContent = label;
+            preview.style.display = 'block';
+        }
+        
+        function toggleFlashSaleSection() {
+            var isFlashSale = document.getElementById('isFlashSale').checked;
+            var section = document.getElementById('flashSaleTimeSection');
+            section.style.display = isFlashSale ? 'block' : 'none';
+        }
+        
+        document.getElementById('discountType').addEventListener('change', updatePricePreview);
+        document.getElementById('discountValue').addEventListener('input', updatePricePreview);
+        document.getElementById('productPrice').addEventListener('input', updatePricePreview);
+        document.getElementById('isFlashSale').addEventListener('change', toggleFlashSaleSection);
         
         function loadImages() {
             fetch('/admin/images')
@@ -312,6 +417,18 @@
                 })
                 .catch(function(err) { showToast('保存失败: ' + err, 'error'); });
         });
+        
+        {{if .product}}
+        {{if .product.DiscountStartTime}}
+        document.getElementById('isFlashSale').checked = true;
+        toggleFlashSaleSection();
+        var startTime = new Date({{.product.DiscountStartTime}}.valueOf() * 1000);
+        var endTime = new Date({{.product.DiscountEndTime}}.valueOf() * 1000);
+        document.getElementById('discountStartTime').value = startTime.toISOString().slice(0, 16);
+        document.getElementById('discountEndTime').value = endTime.toISOString().slice(0, 16);
+        {{end}}
+        updatePricePreview();
+        {{end}}
     </script>
 </body>
 </html>

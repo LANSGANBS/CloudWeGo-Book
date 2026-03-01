@@ -36,7 +36,7 @@ func NewSearchProductsService(ctx context.Context) *SearchProductsService {
 func (s *SearchProductsService) Run(req *product.SearchProductsReq) (resp *product.SearchProductsResp, err error) {
 	ragSvc := rag.GetRAGService()
 	stockService := NewStockService(s.ctx)
-	
+
 	results, err := ragSvc.Search(s.ctx, req.Query, 10)
 	if err != nil {
 		klog.Warnf("RAG search failed, falling back to SQL search: %v", err)
@@ -60,14 +60,29 @@ func (s *SearchProductsService) Run(req *product.SearchProductsReq) (resp *produ
 		if stockData != nil {
 			stock = stockData.Available
 		}
-		productResults = append(productResults, &product.Product{
-			Id:          uint32(p.ID),
-			Name:        p.Name,
-			Description: p.Description,
-			Picture:     p.Picture,
-			Price:       p.Price,
-			Stock:       stock,
-		})
+		protoProduct := &product.Product{
+			Id:             uint32(p.ID),
+			Name:           p.Name,
+			Description:    p.Description,
+			Picture:        p.Picture,
+			Price:          p.Price,
+			Stock:          stock,
+			DiscountType:   int32(p.DiscountType),
+			DiscountValue:  p.DiscountValue,
+			DiscountLabel:  p.GetDiscountLabel(),
+			DiscountStatus: int32(p.GetDiscountStatus()),
+			ActualPrice:    p.GetActualPrice(),
+		}
+		if p.DiscountStartTime != nil {
+			protoProduct.DiscountStartTime = p.DiscountStartTime.Unix()
+		}
+		if p.DiscountEndTime != nil {
+			protoProduct.DiscountEndTime = p.DiscountEndTime.Unix()
+		}
+		if p.OriginalPrice != nil {
+			protoProduct.OriginalPrice = *p.OriginalPrice
+		}
+		productResults = append(productResults, protoProduct)
 	}
 
 	klog.Infof("RAG search returned %d products for query: %s", len(productResults), req.Query)
@@ -79,7 +94,7 @@ func (s *SearchProductsService) fallbackSearch(req *product.SearchProductsReq) (
 	if err != nil {
 		return nil, err
 	}
-	
+
 	stockService := NewStockService(s.ctx)
 	var results []*product.Product
 	for _, v := range p {
@@ -88,14 +103,29 @@ func (s *SearchProductsService) fallbackSearch(req *product.SearchProductsReq) (
 		if stockData != nil {
 			stock = stockData.Available
 		}
-		results = append(results, &product.Product{
-			Id:          uint32(v.ID),
-			Name:        v.Name,
-			Description: v.Description,
-			Picture:     v.Picture,
-			Price:       v.Price,
-			Stock:       stock,
-		})
+		protoProduct := &product.Product{
+			Id:             uint32(v.ID),
+			Name:           v.Name,
+			Description:    v.Description,
+			Picture:        v.Picture,
+			Price:          v.Price,
+			Stock:          stock,
+			DiscountType:   int32(v.DiscountType),
+			DiscountValue:  v.DiscountValue,
+			DiscountLabel:  v.GetDiscountLabel(),
+			DiscountStatus: int32(v.GetDiscountStatus()),
+			ActualPrice:    v.GetActualPrice(),
+		}
+		if v.DiscountStartTime != nil {
+			protoProduct.DiscountStartTime = v.DiscountStartTime.Unix()
+		}
+		if v.DiscountEndTime != nil {
+			protoProduct.DiscountEndTime = v.DiscountEndTime.Unix()
+		}
+		if v.OriginalPrice != nil {
+			protoProduct.OriginalPrice = *v.OriginalPrice
+		}
+		results = append(results, protoProduct)
 	}
 	return &product.SearchProductsResp{Results: results}, nil
 }

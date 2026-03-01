@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal/redis"
 	"github.com/cloudwego/kitex/pkg/klog"
@@ -22,6 +23,10 @@ type ProductVector struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Vector      []float32 `json:"vector"`
+	Stock       int64     `json:"stock"`
+	Sales       int       `json:"sales"`
+	Price       float32   `json:"price"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 func NewVectorStore() *VectorStore {
@@ -112,6 +117,41 @@ type SearchResult struct {
 	Score       float32
 }
 
+func (v *VectorStore) calculateWeight(pv *ProductVector) float32 {
+	var weight float32 = 1.0
+
+	if pv.Stock <= 0 {
+		weight *= 0.3
+	} else if pv.Stock < 10 {
+		weight *= 0.7
+	}
+
+	if pv.Sales > 1000 {
+		weight += 0.3
+	} else if pv.Sales > 100 {
+		weight += 0.2
+	} else if pv.Sales > 10 {
+		weight += 0.1
+	}
+
+	daysSinceCreated := time.Since(pv.CreatedAt).Hours() / 24
+	if daysSinceCreated < 7 {
+		weight += 0.2
+	} else if daysSinceCreated < 30 {
+		weight += 0.1
+	}
+
+	if pv.Price > 0 && pv.Price < 50 {
+		weight += 0.1
+	}
+
+	if weight < 0.1 {
+		weight = 0.1
+	}
+
+	return weight
+}
+
 func (v *VectorStore) SearchSimilar(ctx context.Context, queryVector []float32, topK int) ([]*SearchResult, error) {
 	vectors, err := v.GetAllProductVectors(ctx)
 	if err != nil {
@@ -121,11 +161,17 @@ func (v *VectorStore) SearchSimilar(ctx context.Context, queryVector []float32, 
 	var results []*SearchResult
 	for _, pv := range vectors {
 		similarity := CosineSimilarity(queryVector, pv.Vector)
+		weight := v.calculateWeight(pv)
+		adjustedScore := similarity * weight
+		
+		klog.Infof("Product %d: similarity=%.4f, weight=%.4f, adjustedScore=%.4f (stock=%d, sales=%d)", 
+			pv.ProductID, similarity, weight, adjustedScore, pv.Stock, pv.Sales)
+		
 		results = append(results, &SearchResult{
 			ProductID:   pv.ProductID,
 			Name:        pv.Name,
 			Description: pv.Description,
-			Score:       similarity,
+			Score:       adjustedScore,
 		})
 	}
 

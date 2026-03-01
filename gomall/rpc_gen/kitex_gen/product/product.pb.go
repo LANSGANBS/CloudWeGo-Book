@@ -9,9 +9,10 @@ import (
 )
 
 type ListProductsReq struct {
-	Page         int32  `protobuf:"varint,1,opt,name=page" json:"page,omitempty"`
-	PageSize     int64  `protobuf:"varint,2,opt,name=pageSize" json:"pageSize,omitempty"`
-	CategoryName string `protobuf:"bytes,3,opt,name=categoryName" json:"categoryName,omitempty"`
+	Page           int32  `protobuf:"varint,1,opt,name=page" json:"page,omitempty"`
+	PageSize       int64  `protobuf:"varint,2,opt,name=pageSize" json:"pageSize,omitempty"`
+	CategoryName   string `protobuf:"bytes,3,opt,name=categoryName" json:"categoryName,omitempty"`
+	DiscountFilter int32  `protobuf:"varint,4,opt,name=discount_filter" json:"discount_filter,omitempty"`
 }
 
 func (x *ListProductsReq) Reset() { *x = ListProductsReq{} }
@@ -41,15 +42,30 @@ func (x *ListProductsReq) GetCategoryName() string {
 	return ""
 }
 
+func (x *ListProductsReq) GetDiscountFilter() int32 {
+	if x != nil {
+		return x.DiscountFilter
+	}
+	return 0
+}
+
 type Product struct {
-	Id          uint32   `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
-	Name        string   `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
-	Description string   `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
-	Picture     string   `protobuf:"bytes,4,opt,name=picture" json:"picture,omitempty"`
-	Price       float32  `protobuf:"fixed32,5,opt,name=price" json:"price,omitempty"`
-	Categories  []string `protobuf:"bytes,6,rep,name=categories" json:"categories,omitempty"`
-	Sales       uint32   `protobuf:"varint,7,opt,name=sales" json:"sales,omitempty"`
-	Stock       int64    `protobuf:"varint,8,opt,name=stock" json:"stock,omitempty"`
+	Id                uint32   `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	Name              string   `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
+	Description       string   `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
+	Picture           string   `protobuf:"bytes,4,opt,name=picture" json:"picture,omitempty"`
+	Price             float32  `protobuf:"fixed32,5,opt,name=price" json:"price,omitempty"`
+	Categories        []string `protobuf:"bytes,6,rep,name=categories" json:"categories,omitempty"`
+	Sales             uint32   `protobuf:"varint,7,opt,name=sales" json:"sales,omitempty"`
+	Stock             int64    `protobuf:"varint,8,opt,name=stock" json:"stock,omitempty"`
+	DiscountType      int32    `protobuf:"varint,9,opt,name=discount_type" json:"discount_type,omitempty"`
+	DiscountValue     float32  `protobuf:"fixed32,10,opt,name=discount_value" json:"discount_value,omitempty"`
+	DiscountStartTime int64    `protobuf:"varint,11,opt,name=discount_start_time" json:"discount_start_time,omitempty"`
+	DiscountEndTime   int64    `protobuf:"varint,12,opt,name=discount_end_time" json:"discount_end_time,omitempty"`
+	OriginalPrice     float32  `protobuf:"fixed32,13,opt,name=original_price" json:"original_price,omitempty"`
+	ActualPrice       float32  `protobuf:"fixed32,14,opt,name=actual_price" json:"actual_price,omitempty"`
+	DiscountLabel     string   `protobuf:"bytes,15,opt,name=discount_label" json:"discount_label,omitempty"`
+	DiscountStatus    int32    `protobuf:"varint,16,opt,name=discount_status" json:"discount_status,omitempty"`
 }
 
 func (x *Product) Reset() { *x = Product{} }
@@ -110,6 +126,62 @@ func (x *Product) GetSales() uint32 {
 func (x *Product) GetStock() int64 {
 	if x != nil {
 		return x.Stock
+	}
+	return 0
+}
+
+func (x *Product) GetDiscountType() int32 {
+	if x != nil {
+		return x.DiscountType
+	}
+	return 0
+}
+
+func (x *Product) GetDiscountValue() float32 {
+	if x != nil {
+		return x.DiscountValue
+	}
+	return 0
+}
+
+func (x *Product) GetDiscountStartTime() int64 {
+	if x != nil {
+		return x.DiscountStartTime
+	}
+	return 0
+}
+
+func (x *Product) GetDiscountEndTime() int64 {
+	if x != nil {
+		return x.DiscountEndTime
+	}
+	return 0
+}
+
+func (x *Product) GetOriginalPrice() float32 {
+	if x != nil {
+		return x.OriginalPrice
+	}
+	return 0
+}
+
+func (x *Product) GetActualPrice() float32 {
+	if x != nil {
+		return x.ActualPrice
+	}
+	return 0
+}
+
+func (x *Product) GetDiscountLabel() string {
+	if x != nil {
+		return x.DiscountLabel
+	}
+	return ""
+}
+
+func (x *Product) GetDiscountStatus() int32 {
+	if x != nil {
+		return x.DiscountStatus
 	}
 	return 0
 }
@@ -539,6 +611,285 @@ func (x *GetStockResp) GetExists() bool {
 	return false
 }
 
+type SetDiscountReq struct {
+	ProductId     uint32  `protobuf:"varint,1,opt,name=product_id" json:"product_id,omitempty"`
+	DiscountType  int32   `protobuf:"varint,2,opt,name=discount_type" json:"discount_type,omitempty"`
+	DiscountValue float32 `protobuf:"fixed32,3,opt,name=discount_value" json:"discount_value,omitempty"`
+	StartTime     int64   `protobuf:"varint,4,opt,name=start_time" json:"start_time,omitempty"`
+	EndTime       int64   `protobuf:"varint,5,opt,name=end_time" json:"end_time,omitempty"`
+}
+
+func (x *SetDiscountReq) Reset() { *x = SetDiscountReq{} }
+
+func (x *SetDiscountReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SetDiscountReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SetDiscountReq) GetProductId() uint32 {
+	if x != nil {
+		return x.ProductId
+	}
+	return 0
+}
+
+func (x *SetDiscountReq) GetDiscountType() int32 {
+	if x != nil {
+		return x.DiscountType
+	}
+	return 0
+}
+
+func (x *SetDiscountReq) GetDiscountValue() float32 {
+	if x != nil {
+		return x.DiscountValue
+	}
+	return 0
+}
+
+func (x *SetDiscountReq) GetStartTime() int64 {
+	if x != nil {
+		return x.StartTime
+	}
+	return 0
+}
+
+func (x *SetDiscountReq) GetEndTime() int64 {
+	if x != nil {
+		return x.EndTime
+	}
+	return 0
+}
+
+type SetDiscountResp struct {
+	Success bool   `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
+	Message string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
+}
+
+func (x *SetDiscountResp) Reset() { *x = SetDiscountResp{} }
+
+func (x *SetDiscountResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SetDiscountResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SetDiscountResp) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SetDiscountResp) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type CancelDiscountReq struct {
+	ProductId uint32 `protobuf:"varint,1,opt,name=product_id" json:"product_id,omitempty"`
+}
+
+func (x *CancelDiscountReq) Reset() { *x = CancelDiscountReq{} }
+
+func (x *CancelDiscountReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CancelDiscountReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CancelDiscountReq) GetProductId() uint32 {
+	if x != nil {
+		return x.ProductId
+	}
+	return 0
+}
+
+type CancelDiscountResp struct {
+	Success bool   `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
+	Message string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
+}
+
+func (x *CancelDiscountResp) Reset() { *x = CancelDiscountResp{} }
+
+func (x *CancelDiscountResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CancelDiscountResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CancelDiscountResp) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *CancelDiscountResp) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type PriceHistoryItem struct {
+	Id                uint32  `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	ProductId         uint32  `protobuf:"varint,2,opt,name=product_id" json:"product_id,omitempty"`
+	ChangeType        int32   `protobuf:"varint,3,opt,name=change_type" json:"change_type,omitempty"`
+	OldPrice          float32 `protobuf:"fixed32,4,opt,name=old_price" json:"old_price,omitempty"`
+	NewPrice          float32 `protobuf:"fixed32,5,opt,name=new_price" json:"new_price,omitempty"`
+	OldDiscountType   int32   `protobuf:"varint,6,opt,name=old_discount_type" json:"old_discount_type,omitempty"`
+	NewDiscountType   int32   `protobuf:"varint,7,opt,name=new_discount_type" json:"new_discount_type,omitempty"`
+	OldDiscountValue  float32 `protobuf:"fixed32,8,opt,name=old_discount_value" json:"old_discount_value,omitempty"`
+	NewDiscountValue  float32 `protobuf:"fixed32,9,opt,name=new_discount_value" json:"new_discount_value,omitempty"`
+	DiscountStartTime int64   `protobuf:"varint,10,opt,name=discount_start_time" json:"discount_start_time,omitempty"`
+	DiscountEndTime   int64   `protobuf:"varint,11,opt,name=discount_end_time" json:"discount_end_time,omitempty"`
+	OperatorName      string  `protobuf:"bytes,12,opt,name=operator_name" json:"operator_name,omitempty"`
+	Remark            string  `protobuf:"bytes,13,opt,name=remark" json:"remark,omitempty"`
+	CreatedAt         int64   `protobuf:"varint,14,opt,name=created_at" json:"created_at,omitempty"`
+}
+
+func (x *PriceHistoryItem) Reset() { *x = PriceHistoryItem{} }
+
+func (x *PriceHistoryItem) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *PriceHistoryItem) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *PriceHistoryItem) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetProductId() uint32 {
+	if x != nil {
+		return x.ProductId
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetChangeType() int32 {
+	if x != nil {
+		return x.ChangeType
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetOldPrice() float32 {
+	if x != nil {
+		return x.OldPrice
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetNewPrice() float32 {
+	if x != nil {
+		return x.NewPrice
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetOldDiscountType() int32 {
+	if x != nil {
+		return x.OldDiscountType
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetNewDiscountType() int32 {
+	if x != nil {
+		return x.NewDiscountType
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetOldDiscountValue() float32 {
+	if x != nil {
+		return x.OldDiscountValue
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetNewDiscountValue() float32 {
+	if x != nil {
+		return x.NewDiscountValue
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetDiscountStartTime() int64 {
+	if x != nil {
+		return x.DiscountStartTime
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetDiscountEndTime() int64 {
+	if x != nil {
+		return x.DiscountEndTime
+	}
+	return 0
+}
+
+func (x *PriceHistoryItem) GetOperatorName() string {
+	if x != nil {
+		return x.OperatorName
+	}
+	return ""
+}
+
+func (x *PriceHistoryItem) GetRemark() string {
+	if x != nil {
+		return x.Remark
+	}
+	return ""
+}
+
+func (x *PriceHistoryItem) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+type GetProductPriceHistoryReq struct {
+	ProductId uint32 `protobuf:"varint,1,opt,name=product_id" json:"product_id,omitempty"`
+	Limit     int32  `protobuf:"varint,2,opt,name=limit" json:"limit,omitempty"`
+}
+
+func (x *GetProductPriceHistoryReq) Reset() { *x = GetProductPriceHistoryReq{} }
+
+func (x *GetProductPriceHistoryReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetProductPriceHistoryReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetProductPriceHistoryReq) GetProductId() uint32 {
+	if x != nil {
+		return x.ProductId
+	}
+	return 0
+}
+
+func (x *GetProductPriceHistoryReq) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type GetProductPriceHistoryResp struct {
+	Items []*PriceHistoryItem `protobuf:"bytes,1,rep,name=items" json:"items,omitempty"`
+}
+
+func (x *GetProductPriceHistoryResp) Reset() { *x = GetProductPriceHistoryResp{} }
+
+func (x *GetProductPriceHistoryResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetProductPriceHistoryResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetProductPriceHistoryResp) GetItems() []*PriceHistoryItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 type ProductCatalogService interface {
 	ListProducts(ctx context.Context, req *ListProductsReq) (res *ListProductsResp, err error)
 	GetProduct(ctx context.Context, req *GetProductReq) (res *GetProductResp, err error)
@@ -549,4 +900,7 @@ type ProductCatalogService interface {
 	DeductStock(ctx context.Context, req *DeductStockReq) (res *DeductStockResp, err error)
 	RestoreStock(ctx context.Context, req *RestoreStockReq) (res *RestoreStockResp, err error)
 	GetStock(ctx context.Context, req *GetStockReq) (res *GetStockResp, err error)
+	SetDiscount(ctx context.Context, req *SetDiscountReq) (res *SetDiscountResp, err error)
+	CancelDiscount(ctx context.Context, req *CancelDiscountReq) (res *CancelDiscountResp, err error)
+	GetProductPriceHistory(ctx context.Context, req *GetProductPriceHistoryReq) (res *GetProductPriceHistoryResp, err error)
 }

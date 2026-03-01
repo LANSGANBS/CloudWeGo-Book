@@ -53,11 +53,17 @@ func (s *RAGService) IndexProducts(ctx context.Context) error {
 
 	for _, p := range products {
 		text := fmt.Sprintf("%s %s", p.Name, p.Description)
-		
+
 		vec, err := s.embeddingClient.GetEmbedding(ctx, text)
 		if err != nil {
 			klog.Errorf("Failed to get embedding for product %d: %v", p.ID, err)
 			continue
+		}
+
+		var stock int64 = 999
+		var stockData model.Stock
+		if err := mysql.DB.WithContext(ctx).Where("product_id = ?", p.ID).First(&stockData).Error; err == nil {
+			stock = stockData.Available
 		}
 
 		pv := &vector.ProductVector{
@@ -65,6 +71,10 @@ func (s *RAGService) IndexProducts(ctx context.Context) error {
 			Name:        p.Name,
 			Description: p.Description,
 			Vector:      vec,
+			Stock:       stock,
+			Sales:       int(p.Sales),
+			Price:       p.Price,
+			CreatedAt:   p.CreatedAt,
 		}
 
 		if err := s.vectorStore.StoreProductVector(ctx, pv); err != nil {
@@ -72,7 +82,7 @@ func (s *RAGService) IndexProducts(ctx context.Context) error {
 			continue
 		}
 
-		klog.Infof("Indexed product %d: %s", p.ID, p.Name)
+		klog.Infof("Indexed product %d: %s (stock=%d, sales=%d, price=%.2f)", p.ID, p.Name, stock, p.Sales, p.Price)
 	}
 
 	klog.Info("Product indexing completed!")

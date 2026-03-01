@@ -57,6 +57,27 @@
             z-index: 1;
             font-weight: 500;
         }
+        .product-tag.flash-sale { 
+            background: linear-gradient(135deg, #ff416c, #ff4b2b); 
+            animation: flashPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes flashPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        .product-original-price {
+            font-size: 11px;
+            color: #999;
+            text-decoration: line-through;
+        }
+        .product-discount-label {
+            font-size: 10px;
+            color: #ff4d4f;
+            background: #fff0f0;
+            padding: 1px 4px;
+            border-radius: 2px;
+            margin-left: 4px;
+        }
         .product-info { padding: 10px; }
         .product-name {
             font-size: 13px;
@@ -224,6 +245,10 @@
                         </div>
                     </div>
                 </div>
+                {{ else if eq $item.DiscountStatus 2 }}
+                <span class="product-tag flash-sale"><i class="fas fa-bolt"></i> 限时特惠</span>
+                {{ else if eq $item.DiscountStatus 4 }}
+                <span class="product-tag" style="background: linear-gradient(135deg, #f093fb, #f5576c);"><i class="fas fa-tag"></i> {{ $item.DiscountLabel }}</span>
                 {{ else }}
                 <span class="product-tag">搜索结果</span>
                 {{ end }}
@@ -231,7 +256,21 @@
             </div>
             <div class="product-info">
                 <div class="product-name">{{ $item.Name }}</div>
-                <div class="product-price">{{ printf "%.2f" $item.Price }}</div>
+                <div class="product-price-row">
+                    {{ if or (eq $item.DiscountStatus 2) (eq $item.DiscountStatus 4) }}
+                    <span class="product-price">{{ printf "%.2f" $item.ActualPrice }}</span>
+                    {{ if gt $item.OriginalPrice 0.0 }}
+                    <span class="product-original-price">{{ printf "%.2f" $item.OriginalPrice }}</span>
+                    {{ else if gt $item.Price 0.0 }}
+                    <span class="product-original-price">{{ printf "%.2f" $item.Price }}</span>
+                    {{ end }}
+                    {{ if $item.DiscountLabel }}
+                    <span class="product-discount-label">{{ $item.DiscountLabel }}</span>
+                    {{ end }}
+                    {{ else }}
+                    <span class="product-price">{{ printf "%.2f" $item.Price }}</span>
+                    {{ end }}
+                </div>
                 <div class="product-meta">
                     <span class="{{if le $item.Stock 0}}text-danger{{else if lt $item.Stock 10}}text-warning{{end}}">
                         {{if le $item.Stock 0}}已售罄{{else if lt $item.Stock 10}}仅剩{{$item.Stock}}件{{else}}库存充足{{end}}

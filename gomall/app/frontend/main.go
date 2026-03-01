@@ -25,6 +25,7 @@ import (
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/infra/mtl"
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/infra/rpc"
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/middleware"
+	product "github.com/cloudwego/biz-demo/gomall/rpc_gen/kitex_gen/product"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/middlewares/server/recovery"
 	"github.com/cloudwego/hertz/pkg/app/server"
@@ -96,6 +97,20 @@ func main() {
 	h.GET("/redirect", func(ctx context.Context, c *app.RequestContext) {
 		c.HTML(consts.StatusOK, "about", utils.H{
 			"title": "Error",
+		})
+	})
+	h.GET("/flash-sale", func(ctx context.Context, c *app.RequestContext) {
+		resp, err := rpc.ProductClient.ListProducts(ctx, &product.ListProductsReq{DiscountFilter: 3})
+		if err != nil {
+			c.HTML(consts.StatusOK, "flash-sale", utils.H{
+				"title": "限时特惠",
+				"items": []*product.Product{},
+			})
+			return
+		}
+		c.HTML(consts.StatusOK, "flash-sale", utils.H{
+			"title": "限时特惠",
+			"items": resp.Products,
 		})
 	})
 	if os.Getenv("GO_ENV") != "online" {

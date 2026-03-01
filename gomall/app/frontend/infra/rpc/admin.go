@@ -16,7 +16,7 @@ package rpc
 
 import (
 	"context"
-	"strings"
+	"regexp"
 
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/conf"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
@@ -28,7 +28,8 @@ var userDB *gorm.DB
 
 func InitUserDB() {
 	dsn := conf.GetConf().MySQL.DSN
-	dsn = strings.Replace(dsn, "/gorm?", "/user?", 1)
+	re := regexp.MustCompile(`/[^/?]+\?`)
+	dsn = re.ReplaceAllString(dsn, "/user?")
 	var err error
 	userDB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {

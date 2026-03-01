@@ -25,12 +25,12 @@ import (
 
 type GetProductService struct {
 	ctx context.Context
-} // NewGetProductService new GetProductService
+}
+
 func NewGetProductService(ctx context.Context) *GetProductService {
 	return &GetProductService{ctx: ctx}
 }
 
-// Run create note info
 func (s *GetProductService) Run(req *product.GetProductReq) (resp *product.GetProductResp, err error) {
 	if req.Id == 0 {
 		return nil, kerrors.NewBizStatusError(40000, "product id is required")
@@ -48,15 +48,32 @@ func (s *GetProductService) Run(req *product.GetProductReq) (resp *product.GetPr
 		stock = stockData.Available
 	}
 	
+	protoProduct := &product.Product{
+		Id:             uint32(p.ID),
+		Picture:        p.Picture,
+		Price:          p.Price,
+		Description:    p.Description,
+		Name:           p.Name,
+		Sales:          uint32(p.Sales),
+		Stock:          stock,
+		DiscountType:   int32(p.DiscountType),
+		DiscountValue:  p.DiscountValue,
+		DiscountLabel:  p.GetDiscountLabel(),
+		DiscountStatus: int32(p.GetDiscountStatus()),
+		ActualPrice:    p.GetActualPrice(),
+	}
+	
+	if p.DiscountStartTime != nil {
+		protoProduct.DiscountStartTime = p.DiscountStartTime.Unix()
+	}
+	if p.DiscountEndTime != nil {
+		protoProduct.DiscountEndTime = p.DiscountEndTime.Unix()
+	}
+	if p.OriginalPrice != nil {
+		protoProduct.OriginalPrice = *p.OriginalPrice
+	}
+	
 	return &product.GetProductResp{
-		Product: &product.Product{
-			Id:          uint32(p.ID),
-			Picture:     p.Picture,
-			Price:       p.Price,
-			Description: p.Description,
-			Name:        p.Name,
-			Sales:       uint32(p.Sales),
-			Stock:       stock,
-		},
+		Product: protoProduct,
 	}, err
 }

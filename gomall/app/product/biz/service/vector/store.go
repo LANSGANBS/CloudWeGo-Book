@@ -7,7 +7,9 @@ import (
 	"math"
 	"time"
 
+	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal/mysql"
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal/redis"
+	"github.com/cloudwego/biz-demo/gomall/app/product/biz/model"
 	"github.com/cloudwego/kitex/pkg/klog"
 )
 
@@ -117,36 +119,42 @@ type SearchResult struct {
 	Score       float32
 }
 
-func (v *VectorStore) calculateWeight(pv *ProductVector) float32 {
+func (v *VectorStore) calculateWeight(stock int64, sales int64, price float32, createdAt time.Time) float32 {
 	var weight float32 = 1.0
 
-	if pv.Stock <= 0 {
-		weight *= 0.3
-	} else if pv.Stock < 10 {
-		weight *= 0.7
+	if stock <= 0 {
+		weight *= 0.5
+	} else if stock < 10 {
+		weight *= 0.8
 	}
 
-	if pv.Sales > 1000 {
+	if sales > 1000 {
+		weight += 1.0
+	} else if sales > 500 {
+		weight += 0.8
+	} else if sales > 100 {
+		weight += 0.5
+	} else if sales > 50 {
 		weight += 0.3
-	} else if pv.Sales > 100 {
-		weight += 0.2
-	} else if pv.Sales > 10 {
+	} else if sales > 10 {
+		weight += 0.15
+	}
+
+	if !createdAt.IsZero() {
+		daysSinceCreated := time.Since(createdAt).Hours() / 24
+		if daysSinceCreated < 7 {
+			weight += 0.2
+		} else if daysSinceCreated < 30 {
+			weight += 0.1
+		}
+	}
+
+	if price > 0 && price < 50 {
 		weight += 0.1
 	}
 
-	daysSinceCreated := time.Since(pv.CreatedAt).Hours() / 24
-	if daysSinceCreated < 7 {
-		weight += 0.2
-	} else if daysSinceCreated < 30 {
-		weight += 0.1
-	}
-
-	if pv.Price > 0 && pv.Price < 50 {
-		weight += 0.1
-	}
-
-	if weight < 0.1 {
-		weight = 0.1
+	if weight < 0.2 {
+		weight = 0.2
 	}
 
 	return weight
@@ -161,12 +169,33 @@ func (v *VectorStore) SearchSimilar(ctx context.Context, queryVector []float32, 
 	var results []*SearchResult
 	for _, pv := range vectors {
 		similarity := CosineSimilarity(queryVector, pv.Vector)
-		weight := v.calculateWeight(pv)
+
+		var stock int64 = 999
+		var sales int64 = int64(pv.Sales)
+		var price float32 = pv.Price
+		var createdAt time.Time = pv.CreatedAt
+
+		dbProduct, err := model.GetProductById(mysql.DB, ctx, int(pv.ProductID))
+		if err == nil {
+			sales = dbProduct.Sales
+			price = dbProduct.Price
+			createdAt = dbProduct.CreatedAt
+
+			var stockData model.Stock
+			if err := mysql.DB.WithContext(ctx).Where("product_id = ?", pv.ProductID).First(&stockData).Error; err == nil {
+				stock = stockData.Available
+			}
+		} else {
+			klog.Warnf("Failed to get product %d from DB, using cached values: %v", pv.ProductID, err)
+			stock = pv.Stock
+		}
+
+		weight := v.calculateWeight(stock, sales, price, createdAt)
 		adjustedScore := similarity * weight
-		
-		klog.Infof("Product %d: similarity=%.4f, weight=%.4f, adjustedScore=%.4f (stock=%d, sales=%d)", 
-			pv.ProductID, similarity, weight, adjustedScore, pv.Stock, pv.Sales)
-		
+
+		klog.Infof("Product %d: similarity=%.4f, weight=%.4f, adjustedScore=%.4f (stock=%d, sales=%d)",
+			pv.ProductID, similarity, weight, adjustedScore, stock, sales)
+
 		results = append(results, &SearchResult{
 			ProductID:   pv.ProductID,
 			Name:        pv.Name,

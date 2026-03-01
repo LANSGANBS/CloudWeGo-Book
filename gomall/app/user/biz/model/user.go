@@ -24,6 +24,7 @@ type User struct {
 	Base
 	Email          string `gorm:"unique"`
 	PasswordHashed string
+	IsAdmin        bool `gorm:"default:false"`
 }
 
 func (u User) TableName() string {
@@ -35,6 +36,15 @@ func GetByEmail(db *gorm.DB, ctx context.Context, email string) (user *User, err
 	return
 }
 
+func GetById(db *gorm.DB, ctx context.Context, id int64) (user *User, err error) {
+	err = db.WithContext(ctx).Model(&User{}).Where("id = ?", id).First(&user).Error
+	return
+}
+
 func Create(db *gorm.DB, ctx context.Context, user *User) error {
 	return db.WithContext(ctx).Create(user).Error
+}
+
+func SetAdmin(db *gorm.DB, ctx context.Context, email string, isAdmin bool) error {
+	return db.WithContext(ctx).Model(&User{}).Where("email = ?", email).Update("is_admin", isAdmin).Error
 }

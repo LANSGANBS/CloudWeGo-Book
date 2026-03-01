@@ -19,29 +19,88 @@ import (
 
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal/mysql"
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/model"
+	"github.com/cloudwego/biz-demo/gomall/app/product/biz/service/rag"
+	"github.com/cloudwego/biz-demo/gomall/app/product/biz/service/vector"
 	product "github.com/cloudwego/biz-demo/gomall/rpc_gen/kitex_gen/product"
+	"github.com/cloudwego/kitex/pkg/klog"
 )
 
 type SearchProductsService struct {
 	ctx context.Context
-} // NewSearchProductsService new SearchProductsService
+}
+
 func NewSearchProductsService(ctx context.Context) *SearchProductsService {
 	return &SearchProductsService{ctx: ctx}
 }
 
-// Run create note info
 func (s *SearchProductsService) Run(req *product.SearchProductsReq) (resp *product.SearchProductsResp, err error) {
-	// Finish your business logic.
+	ragSvc := rag.GetRAGService()
+	stockService := NewStockService(s.ctx)
+	
+	results, err := ragSvc.Search(s.ctx, req.Query, 10)
+	if err != nil {
+		klog.Warnf("RAG search failed, falling back to SQL search: %v", err)
+		return s.fallbackSearch(req)
+	}
+
+	if len(results) == 0 {
+		klog.Info("RAG search returned no results, falling back to SQL search")
+		return s.fallbackSearch(req)
+	}
+
+	var productResults []*product.Product
+	for _, r := range results {
+		p, err := model.GetProductById(mysql.DB, s.ctx, int(r.ProductID))
+		if err != nil {
+			klog.Warnf("Failed to get product %d: %v", r.ProductID, err)
+			continue
+		}
+		var stock int64 = 999
+		stockData, _ := stockService.GetStock(uint32(p.ID))
+		if stockData != nil {
+			stock = stockData.Available
+		}
+		productResults = append(productResults, &product.Product{
+			Id:          uint32(p.ID),
+			Name:        p.Name,
+			Description: p.Description,
+			Picture:     p.Picture,
+			Price:       p.Price,
+			Stock:       stock,
+		})
+	}
+
+	klog.Infof("RAG search returned %d products for query: %s", len(productResults), req.Query)
+	return &product.SearchProductsResp{Results: productResults}, nil
+}
+
+func (s *SearchProductsService) fallbackSearch(req *product.SearchProductsReq) (resp *product.SearchProductsResp, err error) {
 	p, err := model.SearchProduct(mysql.DB, s.ctx, req.Query)
+	if err != nil {
+		return nil, err
+	}
+	
+	stockService := NewStockService(s.ctx)
 	var results []*product.Product
 	for _, v := range p {
+		var stock int64 = 999
+		stockData, _ := stockService.GetStock(uint32(v.ID))
+		if stockData != nil {
+			stock = stockData.Available
+		}
 		results = append(results, &product.Product{
 			Id:          uint32(v.ID),
 			Name:        v.Name,
 			Description: v.Description,
 			Picture:     v.Picture,
 			Price:       v.Price,
+			Stock:       stock,
 		})
 	}
-	return &product.SearchProductsResp{Results: results}, err
+	return &product.SearchProductsResp{Results: results}, nil
+}
+
+func (s *SearchProductsService) SearchWithScores(req *product.SearchProductsReq) ([]*vector.SearchResult, error) {
+	ragSvc := rag.GetRAGService()
+	return ragSvc.Search(s.ctx, req.Query, 10)
 }

@@ -1,22 +1,268 @@
 {{ define "category" }}
     {{ template "header" . }}
-    <div class="row">
-        {{ range $.items}}
-            <div class="card border-0 col-lg-4 col-md-6 col-sm-12 p-1">
-                <a href="/product?id={{ .Id }}" class="btn">
-                    <div class="card-body row">
-                        <img src="{{ .Picture }}" class="col-lg-6 col-sm-12" alt="..."
-                             style="max-height: 100%; min-height: 100%;">
-                        <div class="col-lg-6 col-sm-12 flex-column align-self-end">
-                            <div class="m-2">
-                                {{ .Name }}
-                            </div>
-                            <div class="m-1">${{ .Price }}</div>
+    
+    <style>
+        .category-header {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .category-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .category-title i {
+            color: var(--primary-color);
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 0;
+        }
+        @media (min-width: 576px) {
+            .product-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (min-width: 992px) {
+            .product-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+            }
+        }
+        @media (min-width: 1200px) {
+            .product-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        .product-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-sm);
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .product-img-wrapper {
+            width: 100%;
+            padding-top: 100%;
+            position: relative;
+            background: #f8f8f8;
+            overflow: hidden;
+        }
+        .product-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .product-tag {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: linear-gradient(135deg, #ff6034, #ff8c42);
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            z-index: 1;
+            font-weight: 500;
+        }
+        .product-info {
+            padding: 10px;
+        }
+        .product-name {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.4;
+            height: 36px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            margin-bottom: 6px;
+        }
+        .product-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .product-price {
+            font-size: 16px;
+            color: #ff4d4f;
+            font-weight: 600;
+        }
+        .product-price::before {
+            content: '¥';
+            font-size: 12px;
+        }
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .product-sales {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .product-sales i {
+            color: #ff6034;
+            font-size: 10px;
+        }
+        
+        /* 售罄遮罩样式 */
+        .sold-out-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(120, 120, 120, 0.55);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sold-out-stamp {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            transform: rotate(-15deg);
+            opacity: 0.92;
+        }
+        .stamp-border {
+            position: absolute;
+            inset: 0;
+            border: 2.5px solid rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.2), inset 0 0 0 3px rgba(255,255,255,0.1);
+        }
+        .stamp-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFFFFF;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+        }
+        .stamp-subtext {
+            font-size: 7px;
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: 0.5px;
+            margin-top: 1px;
+        }
+        .stamp-waves {
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .stamp-wave {
+            width: 14px;
+            height: 3px;
+            background: transparent;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.85);
+            border-bottom: none;
+        }
+        .stamp-wave:nth-child(2) { width: 12px; margin-left: 1px; }
+        .stamp-wave:nth-child(3) { width: 10px; margin-left: 2px; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+        }
+        .empty-state i {
+            font-size: 48px;
+            color: #ddd;
+            margin-bottom: 16px;
+        }
+        .empty-state h4 {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .empty-state p {
+            color: #bbb;
+            font-size: 14px;
+        }
+    </style>
+
+    <div class="category-header">
+        <div class="category-title">
+            <i class="fas fa-folder"></i>
+            {{ if .category_name }}{{ .category_name }}{{ else }}全部分类{{ end }}
+        </div>
+    </div>
+
+    {{ if $.items }}
+    <div class="product-grid">
+        {{ range $.items }}
+        <a href="/product?id={{ .Id }}" class="product-card">
+            <div class="product-img-wrapper">
+                {{ if le .Stock 0 }}
+                <div class="sold-out-overlay">
+                    <div class="sold-out-stamp">
+                        <div class="stamp-border">
+                            <div class="stamp-text">已售罄</div>
+                            <div class="stamp-subtext">SOLD OUT</div>
+                        </div>
+                        <div class="stamp-waves">
+                            <div class="stamp-wave"></div>
+                            <div class="stamp-wave"></div>
+                            <div class="stamp-wave"></div>
                         </div>
                     </div>
-                </a>
+                </div>
+                {{ else }}
+                <span class="product-tag">热卖</span>
+                {{ end }}
+                <img src="{{ .Picture }}" class="product-img" alt="{{ .Name }}" loading="lazy">
             </div>
-        {{ end}}
+            <div class="product-info">
+                <div class="product-name">{{ .Name }}</div>
+                <div class="product-price-row">
+                    <span class="product-price">{{ printf "%.2f" .Price }}</span>
+                </div>
+                <div class="product-meta">
+                    <span class="{{if le .Stock 0}}text-danger{{else if lt .Stock 10}}text-warning{{end}}">
+                        {{if le .Stock 0}}已售罄{{else if lt .Stock 10}}仅剩{{.Stock}}件{{else}}库存充足{{end}}
+                    </span>
+                    <span class="product-sales"><i class="fas fa-fire"></i> {{ .Sales }}人付款</span>
+                </div>
+            </div>
+        </a>
+        {{ end }}
     </div>
+    {{ else }}
+    <div class="empty-state">
+        <i class="fas fa-box-open"></i>
+        <h4>暂无商品</h4>
+        <p>该分类下还没有商品，去看看其他分类吧</p>
+        <a href="/" class="btn btn-primary mt-3" style="background: var(--primary-gradient); border: none; border-radius: 20px; padding: 8px 24px;">返回首页</a>
+    </div>
+    {{ end }}
+
     {{ template "footer" . }}
 {{ end }}

@@ -17,32 +17,35 @@ CREATE TABLE `product`
     `description` varchar(255)   NOT NULL,
     `picture`     varchar(255)   NOT NULL,
     `price`       decimal(10, 2) NOT NULL,
+    `sales`       bigint         NOT NULL DEFAULT 0,
+    `deleted_at`  datetime       DEFAULT NULL,
     `created_at`  datetime       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`  datetime       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    INDEX `idx_product_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 INSERT INTO `product`
 VALUES (1, 'Notebook',
         'The cloudwego notebook is a highly efficient and feature-rich notebook designed to meet all your note-taking needs. ',
-        '/static/image/notebook.jpeg', 9.90, '2023-12-06 15:26:19', '2023-12-09 22:29:10'),
+        '/static/image/notebook.jpeg', 9.90, 100, NULL, '2023-12-06 15:26:19', '2023-12-09 22:29:10'),
        (2, 'Mouse-Pad',
         'The cloudwego mouse pad is a premium-grade accessory designed to enhance your computer usage experience. ',
-        '/static/image/mouse-pad.jpeg', 8.80, '2023-12-06 15:26:19', '2023-12-09 22:29:59'),
+        '/static/image/mouse-pad.jpeg', 8.80, 85, NULL, '2023-12-06 15:26:19', '2023-12-09 22:29:59'),
        (3, 'T-Shirt',
         'The cloudwego t-shirt is a stylish and comfortable clothing item that allows you to showcase your fashion sense while enjoying maximum comfort.',
-        '/static/image/t-shirt.jpeg', 6.60, '2023-12-06 15:26:19', '2023-12-09 22:31:20'),
+        '/static/image/t-shirt.jpeg', 6.60, 256, NULL, '2023-12-06 15:26:19', '2023-12-09 22:31:20'),
        (4, 'T-Shirt',
         'The cloudwego t-shirt is a stylish and comfortable clothing item that allows you to showcase your fashion sense while enjoying maximum comfort.',
-        '/static/image/t-shirt-1.jpeg', 2.20, '2023-12-06 15:26:19', '2023-12-09 22:31:20'),
+        '/static/image/t-shirt-1.jpeg', 2.20, 128, NULL, '2023-12-06 15:26:19', '2023-12-09 22:31:20'),
        (5, 'Sweatshirt',
         'The cloudwego Sweatshirt is a cozy and fashionable garment that provides warmth and style during colder weather.',
-        '/static/image/sweatshirt.jpeg', 1.10, '2023-12-06 15:26:19', '2023-12-09 22:32:35'),
+        '/static/image/sweatshirt.jpeg', 1.10, 64, NULL, '2023-12-06 15:26:19', '2023-12-09 22:32:35'),
        (6, 'T-Shirt',
         'The cloudwego t-shirt is a stylish and comfortable clothing item that allows you to showcase your fashion sense while enjoying maximum comfort.',
-        '/static/image/t-shirt-2.jpeg', 1.80, '2023-12-06 15:26:19', '2023-12-09 22:31:20'),
+        '/static/image/t-shirt-2.jpeg', 1.80, 32, NULL, '2023-12-06 15:26:19', '2023-12-09 22:31:20'),
        (10, 'mascot',
         'The cloudwego mascot is a charming and captivating representation of the brand, designed to bring joy and a playful spirit to any environment.',
-        '/static/image/logo.jpg', 4.80, '2023-12-06 15:26:19', '2023-12-09 22:39:47');
+        '/static/image/logo.jpg', 4.80, 512, NULL, '2023-12-06 15:26:19', '2023-12-09 22:39:47');
 CREATE TABLE `product_category`
 (
     `id`          int      NOT NULL AUTO_INCREMENT,

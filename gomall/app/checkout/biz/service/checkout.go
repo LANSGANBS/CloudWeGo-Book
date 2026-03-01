@@ -43,15 +43,17 @@ func NewCheckoutService(ctx context.Context) *CheckoutService {
 }
 
 /*
-	Run
+Run
 
 1. get cart
-2. calculate cart
-3. create order
-4. empty cart
-5. pay
-6. change order result
-7. finish
+2. calculate cart & check stock
+3. deduct stock
+4. create order
+5. empty cart
+6. pay
+7. change order result
+8. increment sales
+9. finish (restore stock if failed)
 */
 func (s *CheckoutService) Run(req *checkout.CheckoutReq) (resp *checkout.CheckoutResp, err error) {
 	// Finish your business logic.
@@ -68,8 +70,9 @@ func (s *CheckoutService) Run(req *checkout.CheckoutReq) (resp *checkout.Checkou
 		return
 	}
 	var (
-		oi    []*order.OrderItem
-		total float32
+		oi              []*order.OrderItem
+		total           float32
+		productSalesMap = make(map[uint32]int32)
 	)
 	for _, cartItem := range cartResult.Cart.Items {
 		productResp, resultErr := rpc.ProductClient.GetProduct(s.ctx, &product.GetProductReq{Id: cartItem.ProductId})
@@ -82,13 +85,46 @@ func (s *CheckoutService) Run(req *checkout.CheckoutReq) (resp *checkout.Checkou
 			continue
 		}
 		p := productResp.Product
+		
+		// Check stock availability
+		if p.Stock < int64(cartItem.Quantity) {
+			err = fmt.Errorf("insufficient stock for product %s: available %d, requested %d", p.Name, p.Stock, cartItem.Quantity)
+			return
+		}
+		
 		cost := p.Price * float32(cartItem.Quantity)
 		total += cost
 		oi = append(oi, &order.OrderItem{
 			Item: &cart.CartItem{ProductId: cartItem.ProductId, Quantity: cartItem.Quantity},
 			Cost: cost,
 		})
+		productSalesMap[cartItem.ProductId] = cartItem.Quantity
 	}
+	
+	// Deduct stock before creating order
+	for productId, quantity := range productSalesMap {
+		deductResp, deductErr := rpc.ProductClient.DeductStock(s.ctx, &product.DeductStockReq{
+			ProductId: productId,
+			Quantity:  quantity,
+		})
+		if deductErr != nil || !deductResp.Success {
+			// Restore already deducted stock
+			for pid, qty := range productSalesMap {
+				if pid == productId {
+					break
+				}
+				_, _ = rpc.ProductClient.RestoreStock(s.ctx, &product.RestoreStockReq{
+					ProductId: pid,
+					Quantity:  qty,
+				})
+			}
+			err = fmt.Errorf("DeductStock.err: productId=%d, quantity=%d, err=%v, msg=%s", 
+				productId, quantity, deductErr, deductResp.GetErrorMessage())
+			return
+		}
+		klog.Infof("Deducted stock: productId=%d, quantity=%d, remaining=%d", productId, quantity, deductResp.RemainingStock)
+	}
+	
 	// create order
 	orderReq := &order.PlaceOrderReq{
 		UserId:       req.UserId,
@@ -109,6 +145,13 @@ func (s *CheckoutService) Run(req *checkout.CheckoutReq) (resp *checkout.Checkou
 	}
 	orderResult, err := rpc.OrderClient.PlaceOrder(s.ctx, orderReq)
 	if err != nil {
+		// Restore stock if order creation fails
+		for productId, quantity := range productSalesMap {
+			_, _ = rpc.ProductClient.RestoreStock(s.ctx, &product.RestoreStockReq{
+				ProductId: productId,
+				Quantity:  quantity,
+			})
+		}
 		err = fmt.Errorf("PlaceOrder.err:%v", err)
 		return
 	}
@@ -138,6 +181,13 @@ func (s *CheckoutService) Run(req *checkout.CheckoutReq) (resp *checkout.Checkou
 	}
 	paymentResult, err := rpc.PaymentClient.Charge(s.ctx, payReq)
 	if err != nil {
+		// Restore stock if payment fails
+		for productId, quantity := range productSalesMap {
+			_, _ = rpc.ProductClient.RestoreStock(s.ctx, &product.RestoreStockReq{
+				ProductId: productId,
+				Quantity:  quantity,
+			})
+		}
 		err = fmt.Errorf("Charge.err:%v", err)
 		return
 	}
@@ -162,6 +212,17 @@ func (s *CheckoutService) Run(req *checkout.CheckoutReq) (resp *checkout.Checkou
 	if err != nil {
 		klog.Error(err)
 		return
+	}
+
+	// increment sales for each product
+	for productId, quantity := range productSalesMap {
+		_, salesErr := rpc.ProductClient.IncrementSales(s.ctx, &product.IncrementSalesReq{
+			Id:       productId,
+			Quantity: quantity,
+		})
+		if salesErr != nil {
+			klog.Errorf("IncrementSales.err: productId=%d, quantity=%d, err=%v", productId, quantity, salesErr)
+		}
 	}
 
 	resp = &checkout.CheckoutResp{

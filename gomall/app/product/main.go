@@ -15,14 +15,16 @@
 package main
 
 import (
+	"context"
 	"net"
-	"strings"
+	"os"
 
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal"
+	"github.com/cloudwego/biz-demo/gomall/app/product/biz/service/rag"
 	"github.com/cloudwego/biz-demo/gomall/app/product/conf"
+	"github.com/cloudwego/biz-demo/gomall/app/product/infra/mq"
 	"github.com/cloudwego/biz-demo/gomall/common/mtl"
 	"github.com/cloudwego/biz-demo/gomall/common/serversuite"
-	"github.com/cloudwego/biz-demo/gomall/common/utils"
 	"github.com/cloudwego/biz-demo/gomall/rpc_gen/kitex_gen/product/productcatalogservice"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/server"
@@ -44,22 +46,53 @@ func main() {
 	mtl.InitTracing(serviceName)
 	mtl.InitMetric(serviceName, conf.GetConf().Kitex.MetricsPort, conf.GetConf().Registry.RegistryAddress[0])
 	dal.Init()
+
+	err := mq.InitRocketMQ()
+	if err != nil {
+		klog.Warnf("Failed to initialize RocketMQ: %v", err)
+	} else {
+		klog.Info("RocketMQ initialized successfully")
+		
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		
+		consumer := mq.NewStockConsumer()
+		go func() {
+			if err := mq.StartConsumer(ctx, consumer.HandleMessage); err != nil {
+				klog.Errorf("Failed to start RocketMQ consumer: %v", err)
+			}
+		}()
+	}
+
+	huggingfaceToken := os.Getenv("SILICONFLOW_API_TOKEN")
+	if huggingfaceToken != "" {
+		klog.Info("Initializing RAG service with SiliconFlow API token...")
+		rag.InitRAGService(huggingfaceToken)
+
+		klog.Info("Indexing products for RAG search...")
+		if err := rag.GetRAGService().IndexProducts(context.Background()); err != nil {
+			klog.Errorf("Failed to index products: %v", err)
+		} else {
+			klog.Info("RAG product indexing completed successfully!")
+		}
+	} else {
+		klog.Warn("HUGGINGFACE_API_TOKEN not set, RAG search will fall back to SQL search")
+	}
+
 	opts := kitexInit()
 
 	svr := productcatalogservice.NewServer(new(ProductCatalogServiceImpl), opts...)
-	err := svr.Run()
+	err = svr.Run()
 	if err != nil {
 		klog.Error(err.Error())
 	}
+	
+	mq.Shutdown()
 }
 
 func kitexInit() (opts []server.Option) {
 	// address
 	address := conf.GetConf().Kitex.Address
-	if strings.HasPrefix(address, ":") {
-		localIp := utils.MustGetLocalIPv4()
-		address = localIp + address
-	}
 	addr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		panic(err)

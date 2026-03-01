@@ -1,0 +1,180 @@
+{{ define "admin-product-form" }}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .productID}}编辑商品{{else}}新增商品{{end}} - CloudWeGo Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --primary-color: #0d6efd; --primary-dark: #0b5ed7; --sidebar-bg: #ffffff; --sidebar-hover: #e9ecef; --text-dark: #212529; --text-muted: #6c757d; }
+        body { min-height: 100vh; background-color: #f5f5f5; }
+        .admin-wrapper { display: flex; min-height: 100vh; }
+        .admin-sidebar { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid #dee2e6; position: fixed; height: 100vh; overflow-y: auto; }
+        .admin-sidebar-header { padding: 1.25rem; border-bottom: 1px solid #dee2e6; }
+        .admin-sidebar-header a { color: var(--primary-color); text-decoration: none; font-size: 1.25rem; font-weight: 600; }
+        .admin-sidebar-header small { color: var(--text-muted); font-size: 0.75rem; }
+        .admin-nav { padding: 1rem 0; }
+        .admin-nav-item { display: block; padding: 0.75rem 1.25rem; color: var(--text-dark); text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s; }
+        .admin-nav-item:hover { background-color: var(--sidebar-hover); color: var(--primary-color); text-decoration: none; }
+        .admin-nav-item.active { background-color: rgba(13, 110, 253, 0.1); color: var(--primary-color); border-left-color: var(--primary-color); font-weight: 500; }
+        .admin-nav-item i { width: 20px; margin-right: 10px; text-align: center; }
+        .admin-main { flex: 1; margin-left: 250px; padding: 2rem; min-height: 100vh; }
+        .admin-header { background-color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .admin-header h1 { font-size: 1.5rem; margin: 0; color: var(--text-dark); }
+        .admin-content { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .alert-banner { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; padding: 0.5rem 1rem; text-align: center; font-size: 0.875rem; }
+        .product-preview { max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 0.375rem; border: 1px solid #dee2e6; }
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast-notification { min-width: 280px; max-width: 400px; padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease-out; font-size: 14px; }
+        .toast-notification.success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .toast-notification.error { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .toast-notification i { font-size: 18px; }
+        .toast-notification .toast-message { flex: 1; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        
+        @media (max-width: 991.98px) { .admin-sidebar { width: 100%; height: auto; position: relative; } .admin-main { margin-left: 0; } .admin-wrapper { flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <div class="alert-banner"><i class="fas fa-info-circle me-2"></i>后台管理系统 - 仅供演示使用</div>
+    <div class="admin-wrapper">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-header">
+                <a href="/admin"><i class="fas fa-store me-2"></i>CloudWeGo Shop</a>
+                <br><small><i class="fas fa-cog me-1"></i>管理后台</small>
+            </div>
+            <nav class="admin-nav">
+                <a class="admin-nav-item" href="/admin"><i class="fas fa-tachometer-alt"></i>控制台</a>
+                <a class="admin-nav-item active" href="/admin/products"><i class="fas fa-box"></i>商品管理</a>
+                <a class="admin-nav-item" href="/admin/categories"><i class="fas fa-tags"></i>分类管理</a>
+                <a class="admin-nav-item" href="/admin/orders"><i class="fas fa-shopping-cart"></i>订单管理</a>
+                <hr class="my-2 mx-3">
+                <a class="admin-nav-item" href="/"><i class="fas fa-external-link-alt"></i>返回前台</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <div class="admin-header">
+                <nav aria-label="breadcrumb" class="d-inline-block">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/admin/products" class="text-decoration-none">商品管理</a>
+                        <li class="breadcrumb-item active">{{if .productID}}编辑商品{{else}}新增商品{{end}}</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="admin-content">
+                <h4 class="mb-4"><i class="fas {{if .productID}}fa-edit{{else}}fa-plus-circle{{end}} me-2"></i>{{if .productID}}编辑商品{{else}}新增商品{{end}}</h4>
+                <form id="productForm">
+                    <input type="hidden" id="productID" name="id" value="{{if .product}}{{.product.ID}}{{end}}">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="productName" class="form-label"><i class="fas fa-tag me-1"></i>商品名称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="productName" name="name" required value="{{if .product}}{{.product.Name}}{{end}}" placeholder="请输入商品名称">
+                            </div>
+                            <div class="mb-3">
+                                <label for="productDescription" class="form-label"><i class="fas fa-align-left me-1"></i>商品描述 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="productDescription" name="description" rows="4" required placeholder="请输入商品描述">{{if .product}}{{.product.Description}}{{end}}</textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="productPrice" class="form-label"><i class="fas fa-dollar-sign me-1"></i>价格 <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="productPrice" name="price" step="0.01" min="0.01" required value="{{if .product}}{{.product.Price}}{{end}}" placeholder="请输入价格">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="productStock" class="form-label"><i class="fas fa-boxes me-1"></i>库存数量</label>
+                                        <input type="number" class="form-control" id="productStock" name="stock" min="0" value="{{if .product}}{{.product.Stock}}{{else}}100{{end}}" placeholder="请输入库存数量">
+                                        <div class="form-text">库存为0时，商品将显示为"已售罄"</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="productCategory" class="form-label"><i class="fas fa-folder me-1"></i>分类 <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="productCategory" name="category" required>
+                                            <option value="">请选择分类</option>
+                                            {{range .categories}}
+                                            <option value="{{.Name}}" {{if eq .Name $.productCategory}}selected{{end}}>{{.Name}}</option>
+                                            {{end}}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-image me-1"></i>商品图片 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="productPicture" name="picture" value="{{if .product}}{{.product.Picture}}{{end}}" placeholder="请输入图片URL地址" required>
+                                <div class="form-text">请输入图片的网络地址，如：https://example.com/image.jpg</div>
+                                <div class="mt-2" id="imagePreview">
+                                    {{if .product}}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{.product.Picture}}" alt="商品图片" class="product-preview" onerror="this.style.display='none'">
+                                        <span class="text-muted small">当前图片</span>
+                                    </div>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>{{if .productID}}保存修改{{else}}创建商品{{end}}</button>
+                                <a href="/admin/products" class="btn btn-secondary"><i class="fas fa-times me-1"></i>取消</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header"><i class="fas fa-lightbulb me-1"></i>提示</div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled mb-0 small">
+                                        <li class="mb-2"><i class="fas fa-check text-success me-1"></i> 商品名称应简洁明了</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-1"></i> 描述应详细说明商品特点</li>
+                                        <li class="mb-2"><i class="fas fa-check text-success me-1"></i> 价格单位为人民币（元）</li>
+                                        <li><i class="fas fa-check text-success me-1"></i> 可从图片库选择或输入URL</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="toast-container" id="toastContainer"></div>
+    <script>
+        function showToast(message, type) {
+            type = type || 'success';
+            var container = document.getElementById('toastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'toast-notification ' + type;
+            var icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            toast.innerHTML = '<i class="fas ' + icon + '"></i><span class="toast-message">' + message + '</span>';
+            container.appendChild(toast);
+            setTimeout(function() {
+                toast.style.animation = 'slideOut 0.3s ease-out forwards';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 2500);
+        }
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            fetch('/admin/products/save', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(d => {
+                    if(d.success) {
+                        showToast(d.message, 'success');
+                        setTimeout(function() { location.href = '/admin/products'; }, 800);
+                    } else {
+                        showToast('保存失败: ' + d.message, 'error');
+                    }
+                })
+                .catch(e => showToast('保存失败: ' + e, 'error'));
+        });
+    </script>
+</body>
+</html>
+{{ end }}

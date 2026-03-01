@@ -16,7 +16,7 @@ package main
 
 import (
 	"net"
-	"strings"
+	"os"
 
 	"github.com/cloudwego/biz-demo/gomall/common/serversuite"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -24,7 +24,6 @@ import (
 	"github.com/cloudwego/biz-demo/gomall/app/order/biz/dal"
 	"github.com/cloudwego/biz-demo/gomall/app/order/conf"
 	"github.com/cloudwego/biz-demo/gomall/common/mtl"
-	"github.com/cloudwego/biz-demo/gomall/common/utils"
 	"github.com/cloudwego/biz-demo/gomall/rpc_gen/kitex_gen/order/orderservice"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/server"
@@ -34,21 +33,32 @@ import (
 var serviceName = conf.GetConf().Kitex.Service
 
 func main() {
-	_ = godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		klog.Infof("godotenv.Load() error: %v", err)
+	}
+	klog.Infof("MYSQL_USER=%s, MYSQL_HOST=%s", os.Getenv("MYSQL_USER"), os.Getenv("MYSQL_HOST"))
+	klog.Info("Step 1: InitLog")
 	mtl.InitLog(&lumberjack.Logger{
 		Filename:   conf.GetConf().Kitex.LogFileName,
 		MaxSize:    conf.GetConf().Kitex.LogMaxSize,
 		MaxBackups: conf.GetConf().Kitex.LogMaxBackups,
 		MaxAge:     conf.GetConf().Kitex.LogMaxAge,
 	})
+	klog.Info("Step 2: InitTracing")
 	mtl.InitTracing(serviceName)
+	klog.Info("Step 3: InitMetric")
 	mtl.InitMetric(serviceName, conf.GetConf().Kitex.MetricsPort, conf.GetConf().Registry.RegistryAddress[0])
+	klog.Info("Step 4: dal.Init")
 	dal.Init()
+	klog.Info("Step 5: kitexInit")
 	opts := kitexInit()
 
+	klog.Info("Step 6: NewServer")
 	svr := orderservice.NewServer(new(OrderServiceImpl), opts...)
 
-	err := svr.Run()
+	klog.Info("Step 7: svr.Run")
+	err = svr.Run()
 	if err != nil {
 		klog.Error(err.Error())
 	}
@@ -57,10 +67,6 @@ func main() {
 func kitexInit() (opts []server.Option) {
 	// address
 	address := conf.GetConf().Kitex.Address
-	if strings.HasPrefix(address, ":") {
-		localIp := utils.MustGetLocalIPv4()
-		address = localIp + address
-	}
 	addr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		panic(err)

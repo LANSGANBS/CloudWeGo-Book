@@ -1,22 +1,686 @@
 {{ define "home" }}
     {{ template "header" . }}
-    <div class="row">
-        {{ range $.items }}
-            <div class="card border-0 col-lg-4 col-md-6 col-sm-12 p-1">
-                <a href="/product?id={{ .Id }}" class="btn">
-                    <div class="card-body row">
-                        <img src="{{ .Picture }}" class="col-lg-6 col-sm-12" alt="..."
-                             style="max-height: 100%; min-height: 100%;">
-                        <div class="col-lg-6 col-sm-12 flex-column align-self-end">
-                            <div class="m-2">
-                                {{ .Name }}
+    
+    <style>
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 0;
+        }
+        @media (min-width: 576px) {
+            .product-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (min-width: 992px) {
+            .product-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        }
+        @media (min-width: 1200px) {
+            .product-grid { grid-template-columns: repeat(5, 1fr); }
+        }
+        .product-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-sm);
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .product-img-wrapper {
+            width: 100%;
+            padding-top: 100%;
+            position: relative;
+            background: #f8f8f8;
+            overflow: hidden;
+        }
+        .product-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .product-tag {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: linear-gradient(135deg, #ff6034, #ff8c42);
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            z-index: 1;
+            font-weight: 500;
+        }
+        .product-tag.new { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .product-tag.discount { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .product-tag.hot { background: linear-gradient(135deg, #ff6034, #ff8c42); }
+        
+        /* 售罄遮罩样式 */
+        .sold-out-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(120, 120, 120, 0.55);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sold-out-stamp {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            transform: rotate(-15deg);
+            opacity: 0.92;
+        }
+        .stamp-border {
+            position: absolute;
+            inset: 0;
+            border: 2.5px solid rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.2), inset 0 0 0 3px rgba(255,255,255,0.1);
+        }
+        .stamp-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFFFFF;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+        }
+        .stamp-subtext {
+            font-size: 7px;
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: 0.5px;
+            margin-top: 1px;
+        }
+        .stamp-waves {
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .stamp-wave {
+            width: 14px;
+            height: 3px;
+            background: transparent;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.85);
+            border-bottom: none;
+        }
+        .stamp-wave:nth-child(2) { width: 12px; margin-left: 1px; }
+        .stamp-wave:nth-child(3) { width: 10px; margin-left: 2px; }
+        .product-info { padding: 10px; }
+        .product-name {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.4;
+            height: 36px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            margin-bottom: 6px;
+        }
+        .product-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .product-price {
+            font-size: 16px;
+            color: #ff4d4f;
+            font-weight: 600;
+        }
+        .product-price::before { content: '¥'; font-size: 12px; }
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .product-sales { display: flex; align-items: center; gap: 2px; }
+        .product-sales i { color: #ff6034; font-size: 10px; }
+        .category-scroll {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            margin-bottom: 12px;
+        }
+        .category-scroll::-webkit-scrollbar { display: none; }
+        .cat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 64px;
+            text-decoration: none;
+            color: var(--text-primary);
+            padding: 8px;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+        .cat-item:hover { background: rgba(255,96,52,0.1); }
+        .cat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        .cat-name { font-size: 11px; text-align: center; white-space: nowrap; }
+        .promo-banner {
+            background: linear-gradient(135deg, #ff6034, #ff8c42);
+            border-radius: var(--border-radius);
+            padding: 16px 20px;
+            color: white;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .promo-text h3 { font-size: 18px; margin: 0 0 4px 0; font-weight: 600; }
+        .promo-text p { font-size: 13px; margin: 0; opacity: 0.9; }
+        .promo-btn {
+            background: white;
+            color: #ff6034;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .filter-section {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-sm);
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .filter-row:last-child { margin-bottom: 0; }
+        .filter-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            min-width: 50px;
+        }
+        .filter-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .filter-tag {
+            background: var(--bg-color);
+            border: 1px solid transparent;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .filter-tag:hover { border-color: var(--primary-color); color: var(--primary-color); }
+        .filter-tag.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        .filter-tag .tag-icon { font-size: 11px; }
+        .sort-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .sort-tag {
+            background: var(--bg-color);
+            border: 1px solid #e8e8e8;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sort-tag:hover { border-color: #1890ff; color: #1890ff; }
+        .sort-tag.active {
+            background: #1890ff;
+            border-color: #1890ff;
+            color: white;
+        }
+        .sort-tag .tag-icon { font-size: 11px; }
+        .sort-dropdown {
+            position: relative;
+        }
+        .sort-btn {
+            background: var(--bg-color);
+            border: 1px solid transparent;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sort-btn:hover { border-color: var(--primary-color); }
+        .sort-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 8px 0;
+            min-width: 140px;
+            display: none;
+            z-index: 100;
+        }
+        .sort-menu.show { display: block; }
+        .sort-item {
+            padding: 8px 16px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sort-item:hover { background: var(--bg-color); }
+        .sort-item.active { color: var(--primary-color); font-weight: 500; }
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+        }
+        .custom-toast {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            display: none;
+            animation: fadeInOut 2s ease-in-out;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .product-count {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+    </style>
+
+    <div class="category-scroll">
+        {{range .categories}}
+        <a href="/category/{{.Name}}" class="cat-item">
+            <div class="cat-icon" style="background: linear-gradient(135deg, {{if eq .Name "电子产品"}}#667eea, #764ba2{{else if eq .Name "服装"}}#f093fb, #f5576c{{else if eq .Name "家居"}}#4facfe, #00f2fe{{else if eq .Name "食品"}}#43e97b, #38f9d7{{else}}#fa709a, #fee140{{end}});">
+                <i class="fas {{if eq .Name "电子产品"}}fa-laptop{{else if eq .Name "服装"}}fa-tshirt{{else if eq .Name "家居"}}fa-couch{{else if eq .Name "食品"}}fa-utensils{{else}}fa-tag{{end}}" style="color: white;"></i>
+            </div>
+            <span class="cat-name">{{.Name}}</span>
+        </a>
+        {{else}}
+        <a href="#" class="cat-item">
+            <div class="cat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                <i class="fas fa-th-large" style="color: white;"></i>
+            </div>
+            <span class="cat-name">全部分类</span>
+        </a>
+        {{end}}
+    </div>
+
+    <div class="promo-banner">
+        <div class="promo-text">
+            <h3><i class="fas fa-fire me-2"></i>限时特惠</h3>
+            <p>精选好物，超值优惠等你来抢</p>
+        </div>
+        <button class="promo-btn" onclick="location.href='/category/电子产品'">立即抢购</button>
+    </div>
+
+    <div class="filter-section">
+        <div class="filter-row">
+            <span class="filter-label">筛选</span>
+            <div class="filter-tags" id="filterTags">
+                <span class="filter-tag active" data-filter="all" onclick="handleFilter(this, 'all')">
+                    <i class="fas fa-th-large tag-icon"></i>全部
+                </span>
+                <span class="filter-tag" data-filter="recommend" onclick="handleFilter(this, 'recommend')">
+                    <i class="fas fa-thumbs-up tag-icon"></i>推荐
+                </span>
+                <span class="filter-tag" data-filter="new" onclick="handleFilter(this, 'new')">
+                    <i class="fas fa-sparkles tag-icon"></i>新品
+                </span>
+                <span class="filter-tag" data-filter="discount" onclick="handleFilter(this, 'discount')">
+                    <i class="fas fa-percent tag-icon"></i>折扣
+                </span>
+                <span class="filter-tag" data-filter="rating" onclick="handleFilter(this, 'rating')">
+                    <i class="fas fa-star tag-icon"></i>好评
+                </span>
+            </div>
+        </div>
+        <div class="filter-row" style="border-top: 1px solid #f0f0f0; padding-top: 10px; margin-top: 6px;">
+            <span class="filter-label">排序</span>
+            <div class="sort-tags" id="sortTags">
+                <span class="sort-tag active" data-sort="default" onclick="handleSort(this, 'default')">
+                    <i class="fas fa-chart-pie tag-icon"></i>综合
+                </span>
+                <span class="sort-tag" data-sort="price_asc" onclick="handleSort(this, 'price_asc')">
+                    <i class="fas fa-arrow-up tag-icon"></i>价格
+                </span>
+                <span class="sort-tag" data-sort="price_desc" onclick="handleSort(this, 'price_desc')">
+                    <i class="fas fa-arrow-down tag-icon"></i>价格
+                </span>
+                <span class="sort-tag" data-sort="sales" onclick="handleSort(this, 'sales')">
+                    <i class="fas fa-fire tag-icon"></i>销量
+                </span>
+                <span class="sort-tag" data-sort="newest" onclick="handleSort(this, 'newest')">
+                    <i class="fas fa-clock tag-icon"></i>最新
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="product-count" id="productCount">共 <span id="totalCount">{{ len $.items }}</span> 件商品</div>
+
+    <div id="productContainer">
+        <div class="product-grid" id="productGrid">
+            {{ range $index, $item := $.items }}
+            <a href="/product?id={{ $item.Id }}" class="product-card" data-price="{{ $item.Price }}" data-id="{{ $item.Id }}" data-index="{{ $index }}" data-sales="{{ $item.Sales }}">
+                <div class="product-img-wrapper">
+                    {{ if le $item.Stock 0 }}
+                    <div class="sold-out-overlay">
+                        <div class="sold-out-stamp">
+                            <div class="stamp-border">
+                                <div class="stamp-text">已售罄</div>
+                                <div class="stamp-subtext">SOLD OUT</div>
                             </div>
-                            <div class="m-1">${{ .Price }}</div>
+                            <div class="stamp-waves">
+                                <div class="stamp-wave"></div>
+                                <div class="stamp-wave"></div>
+                                <div class="stamp-wave"></div>
+                            </div>
                         </div>
                     </div>
-                </a>
-            </div>
-        {{ end}}
+                    {{ else if gt $item.Sales 100 }}
+                    <span class="product-tag hot">热卖</span>
+                    {{ else if gt $item.Sales 50 }}
+                    <span class="product-tag" style="background: linear-gradient(135deg, #667eea, #764ba2);">畅销</span>
+                    {{ else if gt $item.Sales 10 }}
+                    <span class="product-tag" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">推荐</span>
+                    {{ else if lt $item.Sales 1 }}
+                    <span class="product-tag new">新品</span>
+                    {{ end }}
+                    <img src="{{ $item.Picture }}" class="product-img" alt="{{ $item.Name }}" loading="lazy">
+                </div>
+                <div class="product-info">
+                    <div class="product-name">{{ $item.Name }}</div>
+                    <div class="product-price-row">
+                        <span class="product-price">{{ printf "%.2f" $item.Price }}</span>
+                    </div>
+                    <div class="product-meta">
+                        <span class="{{if le $item.Stock 0}}text-danger{{else if lt $item.Stock 10}}text-warning{{end}}">
+                            {{if le $item.Stock 0}}已售罄{{else if lt $item.Stock 10}}仅剩{{$item.Stock}}件{{else}}库存充足{{end}}
+                        </span>
+                        <span class="product-sales"><i class="fas fa-fire"></i> {{ $item.Sales }}人付款</span>
+                    </div>
+                </div>
+            </a>
+            {{ end }}
+        </div>
     </div>
+
+    <div class="toast-container">
+        <div class="custom-toast" id="toast"></div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        var currentFilter = 'all';
+        var currentSort = 'default';
+        var allProducts = [];
+        var isInitialized = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (isInitialized) return;
+            isInitialized = true;
+            
+            var grid = document.getElementById('productGrid');
+            var products = grid.querySelectorAll('.product-card');
+            
+            products.forEach(function(p, i) {
+                var sales = parseInt(p.getAttribute('data-sales')) || 0;
+                var price = parseFloat(p.getAttribute('data-price')) || 0;
+                var index = i;
+                
+                var filterFlags = {
+                    recommend: sales > 50 || price < 5,
+                    new: index < 3,
+                    discount: price < 5,
+                    rating: sales > 100
+                };
+                
+                p.setAttribute('data-recommend', filterFlags.recommend ? '1' : '0');
+                p.setAttribute('data-new', filterFlags.new ? '1' : '0');
+                p.setAttribute('data-discount', filterFlags.discount ? '1' : '0');
+                p.setAttribute('data-rating', filterFlags.rating ? '1' : '0');
+                
+                allProducts.push({
+                    element: p,
+                    price: price,
+                    sales: sales,
+                    id: p.getAttribute('data-id'),
+                    index: index,
+                    filters: filterFlags
+                });
+            });
+            
+            applyFilterAndSort();
+        });
+
+        function showToast(message) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            toast.style.animation = 'none';
+            toast.offsetHeight;
+            toast.style.animation = 'fadeInOut 2s ease-in-out';
+            setTimeout(function() { toast.style.display = 'none'; }, 2000);
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function updateProductCount(count) {
+            document.getElementById('totalCount').textContent = count;
+        }
+
+        function handleFilter(element, filterType) {
+            if (currentFilter === filterType) {
+                showToast('当前已是该筛选条件');
+                return;
+            }
+            
+            var tags = document.querySelectorAll('.filter-tags .filter-tag[data-filter]');
+            tags.forEach(function(tag) { tag.classList.remove('active'); });
+            element.classList.add('active');
+            currentFilter = filterType;
+
+            var filterNames = {
+                'all': '全部',
+                'recommend': '推荐',
+                'new': '新品',
+                'discount': '折扣',
+                'rating': '好评'
+            };
+
+            showLoading();
+
+            setTimeout(function() {
+                hideLoading();
+                applyFilterAndSort();
+                showToast('已筛选' + filterNames[filterType] + '商品');
+            }, 200);
+        }
+
+        function handleSort(element, sortType) {
+            if (currentSort === sortType) {
+                showToast('当前已是该排序方式');
+                return;
+            }
+            
+            var sortTags = document.querySelectorAll('.sort-tag[data-sort]');
+            sortTags.forEach(function(tag) { tag.classList.remove('active'); });
+            element.classList.add('active');
+            currentSort = sortType;
+
+            var sortNames = {
+                'default': '综合排序',
+                'price_asc': '价格升序',
+                'price_desc': '价格降序',
+                'newest': '最新发布',
+                'sales': '销量优先'
+            };
+
+            showLoading();
+
+            setTimeout(function() {
+                hideLoading();
+                applyFilterAndSort();
+                showToast('已按' + sortNames[sortType] + '排列');
+            }, 200);
+        }
+
+        function applyFilterAndSort() {
+            var grid = document.getElementById('productGrid');
+            var visibleProducts = [];
+            
+            allProducts.forEach(function(product) {
+                var shouldShow = false;
+                
+                switch (currentFilter) {
+                    case 'all':
+                        shouldShow = true;
+                        break;
+                    case 'recommend':
+                        shouldShow = product.filters.recommend;
+                        break;
+                    case 'new':
+                        shouldShow = product.filters.new;
+                        break;
+                    case 'discount':
+                        shouldShow = product.filters.discount;
+                        break;
+                    case 'rating':
+                        shouldShow = product.filters.rating;
+                        break;
+                    default:
+                        shouldShow = true;
+                }
+                
+                product.element.style.display = shouldShow ? 'block' : 'none';
+                
+                if (shouldShow) {
+                    visibleProducts.push(product);
+                }
+            });
+
+            visibleProducts.sort(function(a, b) {
+                switch (currentSort) {
+                    case 'default':
+                        var maxSales = Math.max(a.sales, b.sales, 1);
+                        var maxPrice = Math.max(a.price, b.price, 1);
+                        var scoreA = (a.sales / maxSales) * 0.5 + (1 - a.price / maxPrice) * 0.3 + (1 / (a.index + 1)) * 0.2;
+                        var scoreB = (b.sales / maxSales) * 0.5 + (1 - b.price / maxPrice) * 0.3 + (1 / (b.index + 1)) * 0.2;
+                        return scoreB - scoreA;
+                    case 'price_asc':
+                        return a.price - b.price;
+                    case 'price_desc':
+                        return b.price - a.price;
+                    case 'newest':
+                        return a.index - b.index;
+                    case 'sales':
+                        return b.sales - a.sales;
+                    default:
+                        return 0;
+                }
+            });
+
+            visibleProducts.forEach(function(product) {
+                grid.appendChild(product.element);
+            });
+
+            updateProductCount(visibleProducts.length);
+        }
+    </script>
+
     {{ template "footer" . }}
 {{ end }}

@@ -16,9 +16,14 @@ package mtl
 
 import (
 	"context"
+	"os"
+	"strings"
+	"time"
 
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/server"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -28,13 +33,41 @@ import (
 var TracerProvider *tracesdk.TracerProvider
 
 func InitTracing(serviceName string) {
-	exporter, err := otlptracegrpc.New(context.Background())
-	if err != nil {
-		panic(err)
+	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+	if otelEndpoint == "" {
+		klog.Infof("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT not set, skipping tracing initialization")
+		TracerProvider = tracesdk.NewTracerProvider()
+		otel.SetTracerProvider(TracerProvider)
+		return
 	}
+
+	otelEndpoint = strings.TrimPrefix(otelEndpoint, "http://")
+	otelEndpoint = strings.TrimPrefix(otelEndpoint, "https://")
+
+	klog.Infof("Initializing tracing with endpoint: %s", otelEndpoint)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	client := otlptracegrpc.NewClient(
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(otelEndpoint),
+	)
+
+	exporter, err := otlptrace.New(ctx, client)
+	if err != nil {
+		klog.Warnf("Failed to initialize OTLP trace exporter: %v, tracing will be disabled", err)
+		TracerProvider = tracesdk.NewTracerProvider()
+		otel.SetTracerProvider(TracerProvider)
+		return
+	}
+
 	server.RegisterShutdownHook(func() {
-		exporter.Shutdown(context.Background()) //nolint:errcheck
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		_ = exporter.Shutdown(shutdownCtx)
 	})
+
 	processor := tracesdk.NewBatchSpanProcessor(exporter)
 	res, err := resource.New(context.Background(), resource.WithAttributes(semconv.ServiceNameKey.String(serviceName)))
 	if err != nil {
@@ -42,4 +75,6 @@ func InitTracing(serviceName string) {
 	}
 	TracerProvider = tracesdk.NewTracerProvider(tracesdk.WithSpanProcessor(processor), tracesdk.WithResource(res))
 	otel.SetTracerProvider(TracerProvider)
+
+	klog.Infof("Tracing initialized successfully")
 }

@@ -1,12 +1,116 @@
 {{ define "about" }}
     {{ template "header" . }}
-    <div class="row">
-        <div class="card border-0" style="width: 100%;">
-            <div class="card-body row">
-                <div class="col-lg-5 col-sm-12 flex-column align-self-end">
-                  <img src="/static/image/logo.jpg" class="col-lg-4 col-sm-12" alt="...">
-                    <p>This is a community driven project</p>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-5">
+                    <h2 class="card-title mb-4 text-primary">
+                        <i class="fas fa-store me-2"></i>关于 CloudWeGo Shop
+                    </h2>
+                    <p class="lead text-muted">
+                        CloudWeGo Shop 是一个基于 CloudWeGo 开源技术栈构建的现代化电商平台演示项目。
+                    </p>
+                    <hr class="my-4">
+                    
+                    <h4 class="mb-3"><i class="fas fa-rocket me-2"></i>项目背景</h4>
+                    <p class="text-muted">
+                        本项目是 CloudWeGo 开源社区提供的电商演示应用，旨在展示如何使用 CloudWeGo 系列框架（Hertz、Kitex 等）构建高性能、可扩展的微服务架构电商系统。项目采用前后端分离架构，后端使用 Go 语言开发，前端使用模板渲染。
+                    </p>
+                    
+                    <h4 class="mb-3 mt-4"><i class="fas fa-cogs me-2"></i>技术栈</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><strong>Hertz</strong> - HTTP 框架</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><strong>Kitex</strong> - RPC 框架</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><strong>GORM</strong> - ORM 框架</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><strong>MySQL</strong> - 关系型数据库</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><strong>Redis</strong> - 缓存服务</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><strong>Consul</strong> - 服务注册与发现</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><strong>Jaeger</strong> - 链路追踪</li>
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i><strong>Prometheus</strong> - 监控指标</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h4 class="mb-3 mt-4"><i class="fas fa-users me-2"></i>目标用户群体</h4>
+                    <p class="text-muted">
+                        本项目主要面向以下用户群体：
+                    </p>
+                    <ul class="text-muted">
+                        <li>正在学习微服务架构的开发者</li>
+                        <li>希望了解 CloudWeGo 技术栈的工程师</li>
+                        <li>需要电商系统参考案例的技术团队</li>
+                        <li>对高性能 Go 应用感兴趣的开发者</li>
+                    </ul>
+                    
+                    <h4 class="mb-3 mt-4"><i class="fas fa-star me-2"></i>主要功能</h4>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-primary h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <i class="fas fa-shopping-bag me-2"></i>前台商城
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled mb-0 small">
+                                        <li><i class="fas fa-angle-right me-1"></i>商品浏览与搜索</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>分类导航</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>购物车管理</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>订单下单与查询</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-success h-100">
+                                <div class="card-header bg-success text-white">
+                                    <i class="fas fa-user-shield me-2"></i>后台管理
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled mb-0 small">
+                                        <li><i class="fas fa-angle-right me-1"></i>商品管理</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>分类管理</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>订单管理</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>数据统计</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-info h-100">
+                                <div class="card-header bg-info text-white">
+                                    <i class="fas fa-server me-2"></i>微服务架构
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled mb-0 small">
+                                        <li><i class="fas fa-angle-right me-1"></i>用户服务</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>商品服务</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>订单服务</li>
+                                        <li><i class="fas fa-angle-right me-1"></i>购物车服务</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-4" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>注意：</strong>本网站仅供演示使用，不是真实的电商平台。请勿输入真实的个人信息或进行实际交易。
+                    </div>
                 </div>
+            </div>
+            
+            <div class="text-center mb-5">
+                <a href="/" class="btn btn-primary btn-lg">
+                    <i class="fas fa-home me-2"></i>返回首页
+                </a>
+                <a href="https://github.com/cloudwego/biz-demo" target="_blank" class="btn btn-outline-secondary btn-lg ms-2">
+                    <i class="fab fa-github me-2"></i>GitHub 源码
+                </a>
             </div>
         </div>
     </div>

@@ -15,7 +15,10 @@
 package clientsuite
 
 import (
+	"time"
+
 	"github.com/cloudwego/kitex/client"
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/pkg/transmeta"
 	"github.com/cloudwego/kitex/transport"
@@ -31,7 +34,18 @@ type CommonGrpcClientSuite struct {
 func (s CommonGrpcClientSuite) Options() []client.Option {
 	r, err := consul.NewConsulResolver(s.RegistryAddr)
 	if err != nil {
-		panic(err)
+		klog.Warnf("Failed to create consul resolver: %v, will retry with timeout", err)
+		for i := 0; i < 5; i++ {
+			time.Sleep(time.Second * 2)
+			r, err = consul.NewConsulResolver(s.RegistryAddr)
+			if err == nil {
+				break
+			}
+			klog.Warnf("Retry %d: Failed to create consul resolver: %v", i+1, err)
+		}
+		if err != nil {
+			klog.Fatalf("Failed to create consul resolver after retries: %v", err)
+		}
 	}
 	opts := []client.Option{
 		client.WithResolver(r),

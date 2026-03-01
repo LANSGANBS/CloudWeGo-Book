@@ -64,3 +64,42 @@ func GetCart(ctx context.Context, c *app.RequestContext) {
 	}
 	c.HTML(consts.StatusOK, "cart", utils.WarpResponse(ctx, c, resp))
 }
+
+// UpdateCartItem .
+// @router /cart/update [POST]
+func UpdateCartItem(ctx context.Context, c *app.RequestContext) {
+	productId := c.PostForm("productId")
+	quantity := c.PostForm("quantity")
+	
+	if productId == "" || quantity == "" {
+		c.JSON(consts.StatusBadRequest, hertzUtils.H{"error": "missing parameters"})
+		return
+	}
+
+	err := service.NewUpdateCartService(ctx, c).Run(productId, quantity)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, hertzUtils.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(consts.StatusOK, hertzUtils.H{"success": true})
+}
+
+// DeleteCartItem .
+// @router /cart/delete [POST]
+func DeleteCartItem(ctx context.Context, c *app.RequestContext) {
+	productId := c.PostForm("productId")
+	
+	if productId == "" {
+		c.JSON(consts.StatusBadRequest, hertzUtils.H{"error": "missing productId"})
+		return
+	}
+
+	err := service.NewDeleteCartService(ctx, c).Run(productId)
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, hertzUtils.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(consts.StatusOK, hertzUtils.H{"success": true})
+}

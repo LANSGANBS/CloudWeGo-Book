@@ -1,0 +1,136 @@
+{{ define "admin-dashboard" }}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>控制台 - CloudWeGo Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --primary-color: #0d6efd; --primary-dark: #0b5ed7; --sidebar-bg: #ffffff; --sidebar-hover: #e9ecef; --text-dark: #212529; --text-muted: #6c757d; }
+        body { min-height: 100vh; background-color: #f5f5f5; }
+        .admin-wrapper { display: flex; min-height: 100vh; }
+        .admin-sidebar { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid #dee2e6; position: fixed; height: 100vh; overflow-y: auto; }
+        .admin-sidebar-header { padding: 1.25rem; border-bottom: 1px solid #dee2e6; }
+        .admin-sidebar-header a { color: var(--primary-color); text-decoration: none; font-size: 1.25rem; font-weight: 600; }
+        .admin-sidebar-header small { color: var(--text-muted); font-size: 0.75rem; }
+        .admin-nav { padding: 1rem 0; }
+        .admin-nav-item { display: block; padding: 0.75rem 1.25rem; color: var(--text-dark); text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s; }
+        .admin-nav-item:hover { background-color: var(--sidebar-hover); color: var(--primary-color); text-decoration: none; }
+        .admin-nav-item.active { background-color: rgba(13, 110, 253, 0.1); color: var(--primary-color); border-left-color: var(--primary-color); font-weight: 500; }
+        .admin-nav-item i { width: 20px; margin-right: 10px; text-align: center; }
+        .admin-main { flex: 1; margin-left: 250px; padding: 2rem; min-height: 100vh; }
+        .admin-header { background-color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .admin-header h1 { font-size: 1.5rem; margin: 0; color: var(--text-dark); }
+        .admin-content { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-card { background-color: white; border-radius: 0.5rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .stat-card .stat-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+        .stat-card .stat-value { font-size: 1.75rem; font-weight: 600; color: var(--text-dark); }
+        .stat-card .stat-label { color: var(--text-muted); font-size: 0.875rem; }
+        .alert-banner { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; padding: 0.5rem 1rem; text-align: center; font-size: 0.875rem; }
+        .welcome-card { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; border-radius: 0.5rem; padding: 2rem; margin-bottom: 1.5rem; }
+        .welcome-card h4 { margin-bottom: 0.5rem; }
+        .welcome-card p { margin-bottom: 0; opacity: 0.9; }
+        .quick-action { display: block; padding: 1rem; background-color: white; border-radius: 0.5rem; text-decoration: none; color: var(--text-dark); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s; }
+        .quick-action:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: var(--primary-color); text-decoration: none; }
+        .quick-action i { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        @media (max-width: 991.98px) { .admin-sidebar { width: 100%; height: auto; position: relative; } .admin-main { margin-left: 0; } .admin-wrapper { flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <div class="alert-banner"><i class="fas fa-info-circle me-2"></i>后台管理系统 - 仅供演示使用</div>
+    <div class="admin-wrapper">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-header">
+                <a href="/admin"><i class="fas fa-store me-2"></i>CloudWeGo Shop</a>
+                <br><small><i class="fas fa-cog me-1"></i>管理后台</small>
+            </div>
+            <nav class="admin-nav">
+                <a class="admin-nav-item active" href="/admin"><i class="fas fa-tachometer-alt"></i>控制台</a>
+                <a class="admin-nav-item" href="/admin/products"><i class="fas fa-box"></i>商品管理</a>
+                <a class="admin-nav-item" href="/admin/categories"><i class="fas fa-tags"></i>分类管理</a>
+                <a class="admin-nav-item" href="/admin/orders"><i class="fas fa-shopping-cart"></i>订单管理</a>
+                <hr class="my-2 mx-3">
+                <a class="admin-nav-item" href="/"><i class="fas fa-external-link-alt"></i>返回前台</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <div class="admin-header">
+                <h1><i class="fas fa-tachometer-alt me-2"></i>控制台</h1>
+            </div>
+
+            <div class="welcome-card">
+                <h4><i class="fas fa-hand-sparkles me-2"></i>欢迎使用 CloudWeGo Shop 管理后台！</h4>
+                <p>您可以在这里管理商品、分类和订单。系统功能正在逐步完善中...</p>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-primary text-white me-3"><i class="fas fa-box"></i></div>
+                            <div><div class="stat-value">{{.productCount}}</div><div class="stat-label">商品总数</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-success text-white me-3"><i class="fas fa-shopping-cart"></i></div>
+                            <div><div class="stat-value">{{.orderCount}}</div><div class="stat-label">订单总数</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-info text-white me-3"><i class="fas fa-users"></i></div>
+                            <div><div class="stat-value">{{.userCount}}</div><div class="stat-label">用户总数</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center">
+                            <div class="stat-icon bg-warning text-white me-3"><i class="fas fa-dollar-sign"></i></div>
+                            <div><div class="stat-value">¥{{printf "%.2f" .todaySales}}</div><div class="stat-label">今日销售</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="mb-3"><i class="fas fa-bolt me-2"></i>快捷操作</h5>
+            <div class="row">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/admin/products/form" class="quick-action text-center">
+                        <i class="fas fa-plus-circle text-primary d-block"></i>
+                        <span>新增商品</span>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/admin/categories/form" class="quick-action text-center">
+                        <i class="fas fa-folder-plus text-success d-block"></i>
+                        <span>新增分类</span>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/admin/orders" class="quick-action text-center">
+                        <i class="fas fa-clipboard-list text-info d-block"></i>
+                        <span>查看订单</span>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <a href="/" class="quick-action text-center">
+                        <i class="fas fa-store text-warning d-block"></i>
+                        <span>访问前台</span>
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+{{ end }}

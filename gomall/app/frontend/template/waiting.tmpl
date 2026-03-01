@@ -1,33 +1,314 @@
 {{ define "waiting" }}
     {{ template "header" . }}
-    <div class="container row p-5 d-flex justify-content-center">
-        <div class="text-danger h3 text-center mb-5">
-            Wait a minutes, please don't close the window
-        </div>
-        <div class="spinner-grow text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="spinner-grow text-secondary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="spinner-grow text-success" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="spinner-grow text-danger" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="spinner-grow text-warning" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="spinner-grow text-info" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="spinner-grow text-light" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="spinner-grow text-dark" role="status">
-            <span class="visually-hidden">Loading...</span>
+    
+    <style>
+        .waiting-container {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .waiting-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 48px 60px;
+            text-align: center;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            max-width: 480px;
+            width: 100%;
+        }
+        .waiting-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            position: relative;
+        }
+        .waiting-spinner {
+            width: 80px;
+            height: 80px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #ff6034;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .waiting-icon-inner {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff6034;
+            font-size: 28px;
+        }
+        .waiting-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .waiting-status {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            min-height: 20px;
+        }
+        .progress-container {
+            margin-bottom: 16px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6034, #ff8c42);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease-out;
+        }
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .progress-percent {
+            font-weight: 500;
+            color: #ff6034;
+        }
+        .process-steps {
+            margin: 24px 0;
+            text-align: left;
+        }
+        .process-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .process-step:last-child {
+            border-bottom: none;
+        }
+        .process-step.active {
+            color: var(--text-primary);
+        }
+        .process-step.completed {
+            color: #52c41a;
+        }
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            background: #f0f0f0;
+            color: var(--text-secondary);
+        }
+        .process-step.active .step-icon {
+            background: #ff6034;
+            color: white;
+            animation: stepPulse 1s ease-in-out infinite;
+        }
+        .process-step.completed .step-icon {
+            background: #52c41a;
+            color: white;
+        }
+        @keyframes stepPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .waiting-tips {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 16px;
+        }
+        .waiting-tips i {
+            color: #faad14;
+        }
+        .security-badges {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .security-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .security-badge i {
+            color: #52c41a;
+        }
+    </style>
+
+    <div class="waiting-container">
+        <div class="waiting-card">
+            <div class="waiting-icon">
+                <div class="waiting-spinner"></div>
+                <div class="waiting-icon-inner">
+                    <i class="fas fa-lock"></i>
+                </div>
+            </div>
+            
+            <h1 class="waiting-title">正在处理支付</h1>
+            <div class="waiting-status" id="statusText">正在连接支付网关...</div>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="progressStep">验证中</span>
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                </div>
+            </div>
+            
+            <div class="process-steps">
+                <div class="process-step" id="step1">
+                    <div class="step-icon"><i class="fas fa-check"></i></div>
+                    <span>验证支付信息</span>
+                </div>
+                <div class="process-step" id="step2">
+                    <div class="step-icon"><i class="fas fa-check"></i></div>
+                    <span>连接银行系统</span>
+                </div>
+                <div class="process-step" id="step3">
+                    <div class="step-icon"><i class="fas fa-check"></i></div>
+                    <span>处理支付请求</span>
+                </div>
+                <div class="process-step" id="step4">
+                    <div class="step-icon"><i class="fas fa-check"></i></div>
+                    <span>确认订单</span>
+                </div>
+            </div>
+            
+            <div class="waiting-tips">
+                <i class="fas fa-info-circle"></i>
+                <span>请勿关闭此页面，等待处理完成</span>
+            </div>
+            
+            <div class="security-badges">
+                <div class="security-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>SSL加密</span>
+                </div>
+                <div class="security-badge">
+                    <i class="fas fa-check-circle"></i>
+                    <span>安全支付</span>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+        (function() {
+            var progress = 0;
+            var progressFill = document.getElementById('progressFill');
+            var progressPercent = document.getElementById('progressPercent');
+            var progressStep = document.getElementById('progressStep');
+            var statusText = document.getElementById('statusText');
+            
+            var steps = [
+                { id: 'step1', progress: 25, status: '正在验证支付信息...', step: '验证中' },
+                { id: 'step2', progress: 50, status: '正在连接银行系统...', step: '连接中' },
+                { id: 'step3', progress: 75, status: '正在处理支付请求...', step: '处理中' },
+                { id: 'step4', progress: 90, status: '正在确认订单...', step: '确认中' }
+            ];
+            
+            var currentStep = 0;
+            
+            function updateProgress(targetProgress, status, step) {
+                var interval = setInterval(function() {
+                    if (progress < targetProgress) {
+                        progress += 1;
+                        progressFill.style.width = progress + '%';
+                        progressPercent.textContent = progress + '%';
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, 30);
+                
+                statusText.textContent = status;
+                progressStep.textContent = step;
+            }
+            
+            function completeStep(stepId) {
+                var stepEl = document.getElementById(stepId);
+                stepEl.classList.remove('active');
+                stepEl.classList.add('completed');
+            }
+            
+            function activateStep(stepId) {
+                var stepEl = document.getElementById(stepId);
+                stepEl.classList.add('active');
+            }
+            
+            function runProcess() {
+                activateStep(steps[0].id);
+                
+                setTimeout(function() {
+                    completeStep(steps[0].id);
+                    activateStep(steps[1].id);
+                    updateProgress(steps[1].progress, steps[1].status, steps[1].step);
+                }, 800);
+                
+                setTimeout(function() {
+                    completeStep(steps[1].id);
+                    activateStep(steps[2].id);
+                    updateProgress(steps[2].progress, steps[2].status, steps[2].step);
+                }, 1800);
+                
+                setTimeout(function() {
+                    completeStep(steps[2].id);
+                    activateStep(steps[3].id);
+                    updateProgress(steps[3].progress, steps[3].status, steps[3].step);
+                }, 3000);
+                
+                setTimeout(function() {
+                    completeStep(steps[3].id);
+                    statusText.textContent = '支付处理完成！';
+                    progressStep.textContent = '完成';
+                    
+                    var finalInterval = setInterval(function() {
+                        if (progress < 100) {
+                            progress += 1;
+                            progressFill.style.width = progress + '%';
+                            progressPercent.textContent = progress + '%';
+                        } else {
+                            clearInterval(finalInterval);
+                            setTimeout(function() {
+                                window.location.href = '/checkout/result';
+                            }, 500);
+                        }
+                    }, 20);
+                }, 4500);
+            }
+            
+            updateProgress(steps[0].progress, steps[0].status, steps[0].step);
+            runProcess();
+        })();
+    </script>
+
     {{ template "footer" . }}
 {{ end }}

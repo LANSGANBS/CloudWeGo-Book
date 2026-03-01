@@ -25,12 +25,16 @@ import (
 )
 
 type Product struct {
-	Base
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	Picture     string     `json:"picture"`
-	Price       float32    `json:"price"`
-	Categories  []Category `json:"categories" gorm:"many2many:product_category"`
+	ID          int            `gorm:"primarykey;column:id"`
+	CreatedAt   time.Time      `gorm:"column:created_at"`
+	UpdatedAt   time.Time      `gorm:"column:updated_at"`
+	Name        string         `json:"name" gorm:"column:name"`
+	Description string         `json:"description" gorm:"column:description"`
+	Picture     string         `json:"picture" gorm:"column:picture"`
+	Price       float32        `json:"price" gorm:"column:price"`
+	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at;index"`
+	Sales       int64          `json:"sales" gorm:"column:sales;default:0"`
+	Categories  []Category     `json:"categories" gorm:"many2many:product_category"`
 }
 
 func (p Product) TableName() string {
@@ -43,7 +47,7 @@ type ProductQuery struct {
 }
 
 func (p ProductQuery) GetById(productId int) (product Product, err error) {
-	err = p.db.WithContext(p.ctx).Model(&Product{}).Where(&Product{Base: Base{ID: productId}}).First(&product).Error
+	err = p.db.WithContext(p.ctx).Model(&Product{}).Where(&Product{ID: productId}).First(&product).Error
 	return
 }
 
@@ -95,11 +99,16 @@ func NewCachedProductQuery(pq ProductQuery, cacheClient *redis.Client) CachedPro
 }
 
 func GetProductById(db *gorm.DB, ctx context.Context, productId int) (product Product, err error) {
-	err = db.WithContext(ctx).Model(&Product{}).Where(&Product{Base: Base{ID: productId}}).First(&product).Error
+	err = db.WithContext(ctx).Model(&Product{}).Select("id, created_at, updated_at, name, description, picture, price, deleted_at, sales").Where(&Product{ID: productId}).First(&product).Error
 	return product, err
 }
 
 func SearchProduct(db *gorm.DB, ctx context.Context, q string) (product []*Product, err error) {
-	err = db.WithContext(ctx).Model(&Product{}).Find(&product, "name like ? or description like ?", "%"+q+"%", "%"+q+"%").Error
+	err = db.WithContext(ctx).Model(&Product{}).Select("id, created_at, updated_at, name, description, picture, price, deleted_at, sales").Find(&product, "name like ? or description like ?", "%"+q+"%", "%"+q+"%").Error
 	return product, err
+}
+
+func IncrementSales(db *gorm.DB, ctx context.Context, productId int, quantity int) error {
+	return db.WithContext(ctx).Model(&Product{}).Where("id = ?", productId).
+		UpdateColumn("sales", gorm.Expr("sales + ?", quantity)).Error
 }

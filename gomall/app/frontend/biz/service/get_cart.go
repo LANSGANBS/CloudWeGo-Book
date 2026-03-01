@@ -16,7 +16,6 @@ package service
 
 import (
 	"context"
-	"strconv"
 
 	common "github.com/cloudwego/biz-demo/gomall/app/frontend/hertz_gen/frontend/common"
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/infra/rpc"
@@ -26,6 +25,14 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 )
+
+type CartItem struct {
+	ProductId uint32
+	Name      string
+	Picture   string
+	Price     float32
+	Qty       int32
+}
 
 type GetCartService struct {
 	RequestContext *app.RequestContext
@@ -37,7 +44,7 @@ func NewGetCartService(Context context.Context, RequestContext *app.RequestConte
 }
 
 func (h *GetCartService) Run(req *common.Empty) (resp map[string]any, err error) {
-	var items []map[string]string
+	var items []*CartItem
 	carts, err := rpc.CartClient.GetCart(h.Context, &rpccart.GetCartReq{
 		UserId: uint32(h.Context.Value(frontendutils.UserIdKey).(float64)),
 	})
@@ -54,13 +61,19 @@ func (h *GetCartService) Run(req *common.Empty) (resp map[string]any, err error)
 			continue
 		}
 		p := productResp.Product
-		items = append(items, map[string]string{"Name": p.Name, "Description": p.Description, "Picture": p.Picture, "Price": strconv.FormatFloat(float64(p.Price), 'f', 2, 64), "Qty": strconv.Itoa(int(v.Quantity))})
+		items = append(items, &CartItem{
+			ProductId: v.GetProductId(),
+			Name:      p.Name,
+			Picture:   p.Picture,
+			Price:     p.Price,
+			Qty:       v.Quantity,
+		})
 		total += float32(v.Quantity) * p.Price
 	}
 
 	return utils.H{
 		"title": "Cart",
 		"items": items,
-		"total": strconv.FormatFloat(float64(total), 'f', 2, 64),
+		"total": total,
 	}, nil
 }

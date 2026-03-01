@@ -30,7 +30,10 @@ import (
 )
 
 func ConsumerInit() {
-	// Connect to a server
+	if mq.Nc == nil {
+		klog.Warn("NATS connection is not available, email consumer will be disabled")
+		return
+	}
 
 	tracer := otel.Tracer("shop-nats-consumer")
 	sub, err := mq.Nc.Subscribe("email", func(m *nats.Msg) {
@@ -42,19 +45,20 @@ func ConsumerInit() {
 		noopEmail := notify.NewNoopEmail()
 		_ = noopEmail.Send(&req)
 
-		// consumer otel
 		ctx := context.Background()
 		ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(m.Header))
 		_, span := tracer.Start(ctx, "shop-email-consumer")
 		defer span.End()
-		// consumer otel
 	})
 	if err != nil {
-		panic(err)
+		klog.Warnf("Failed to subscribe to NATS: %v, email consumer will be disabled", err)
+		return
 	}
 
 	server.RegisterShutdownHook(func() {
 		sub.Unsubscribe() //nolint:errcheck
 		mq.Nc.Close()
 	})
+
+	klog.Info("Email consumer initialized successfully")
 }

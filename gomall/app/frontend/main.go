@@ -69,7 +69,7 @@ func main() {
 	),
 		tracer,
 	)
-	h.LoadHTMLGlob("template/*")
+	h.LoadHTMLGlob("template/*.tmpl")
 	h.Delims("{{", "}}")
 
 	h.Use(hertzoteltracing.ServerMiddleware(cfg))

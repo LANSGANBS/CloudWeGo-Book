@@ -20,6 +20,7 @@ import (
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal/mysql"
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/model"
 	product "github.com/cloudwego/biz-demo/gomall/rpc_gen/kitex_gen/product"
+	"github.com/cloudwego/kitex/pkg/klog"
 )
 
 type ListProductsService struct {
@@ -31,15 +32,53 @@ func NewListProductsService(ctx context.Context) *ListProductsService {
 
 // Run create note info
 func (s *ListProductsService) Run(req *product.ListProductsReq) (resp *product.ListProductsResp, err error) {
-	// Finish your business logic.
-	c, err := model.GetProductsByCategoryName(mysql.DB, s.ctx, req.CategoryName)
-	if err != nil {
-		return nil, err
-	}
 	resp = &product.ListProductsResp{}
-	for _, v1 := range c {
-		for _, v := range v1.Products {
-			resp.Products = append(resp.Products, &product.Product{Id: uint32(v.ID), Name: v.Name, Description: v.Description, Picture: v.Picture, Price: v.Price})
+	stockService := NewStockService(s.ctx)
+
+	if req.CategoryName != "" {
+		c, err := model.GetProductsByCategoryName(mysql.DB, s.ctx, req.CategoryName)
+		if err != nil {
+			return nil, err
+		}
+		for _, v1 := range c {
+			for _, v := range v1.Products {
+				var stock int64 = 999
+				stockData, _ := stockService.GetStock(uint32(v.ID))
+				if stockData != nil {
+					stock = stockData.Available
+				}
+				resp.Products = append(resp.Products, &product.Product{
+					Id:          uint32(v.ID),
+					Name:        v.Name,
+					Description: v.Description,
+					Picture:     v.Picture,
+					Price:       v.Price,
+					Sales:       uint32(v.Sales),
+					Stock:       stock,
+				})
+			}
+		}
+	} else {
+		products, err := model.GetAllProductsOrderByTime(mysql.DB, s.ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range products {
+			klog.Infof("ListProducts: Product ID=%d, Name=%s, Sales=%d, Price=%.2f", v.ID, v.Name, v.Sales, v.Price)
+			var stock int64 = 999
+			stockData, _ := stockService.GetStock(uint32(v.ID))
+			if stockData != nil {
+				stock = stockData.Available
+			}
+			resp.Products = append(resp.Products, &product.Product{
+				Id:          uint32(v.ID),
+				Name:        v.Name,
+				Description: v.Description,
+				Picture:     v.Picture,
+				Price:       v.Price,
+				Sales:       uint32(v.Sales),
+				Stock:       stock,
+			})
 		}
 	}
 

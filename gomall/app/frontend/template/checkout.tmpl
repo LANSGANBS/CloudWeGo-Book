@@ -1,123 +1,539 @@
 {{ define "checkout" }}
     {{ template "header" . }}
-    <div class="row mb-5">
-        <div class="col-lg-8 col-sm-12">
-            <form method="post" action="/checkout/waiting">
-                <h4 class="mb-3 mt-3">Contact</h4>
-                <label for="email" class="form-label col-12">
-                    <input class="form-control" id="email" type="email" placeholder="Email" name="email"
-                           aria-label="email" value="abc@example.com">
-                </label>
-                <h4 class="mb-3 mt-3">Delivery</h4>
-                <div class="mb-3 mt-3 col-12 row">
-                    <label for="firstname" class="col-md-6 col-sm-12">
-                        <input type="text" id="firstname" class="form-control" placeholder="First name"
-                               name="firstname" value="world">
-                    </label>
-                    <label for="lastname" class="col-md-6 col-sm-12">
-                        <input type="text" id="lastname" class="form-control" placeholder="Last name" name="lastname"
-                               value="hello">
-                    </label>
+    
+    <style>
+        .checkout-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        .checkout-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .checkout-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .checkout-title i {
+            color: var(--primary-color);
+        }
+        .checkout-steps {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .step-item.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        .step-item.completed {
+            color: #52c41a;
+        }
+        .step-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background: #f0f0f0;
+            color: var(--text-secondary);
+        }
+        .step-item.active .step-dot {
+            background: linear-gradient(135deg, #ff6034, #ff8c42);
+            color: white;
+        }
+        .step-item.completed .step-dot {
+            background: #52c41a;
+            color: white;
+        }
+        .step-line {
+            width: 40px;
+            height: 2px;
+            background: #e8e8e8;
+        }
+        .step-line.completed {
+            background: #52c41a;
+        }
+        .checkout-body {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 24px;
+        }
+        @media (max-width: 992px) {
+            .checkout-body {
+                grid-template-columns: 1fr;
+            }
+        }
+        .checkout-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-section {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title i {
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 576px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 14px;
+            color: var(--text-primary);
+            background: var(--bg-color);
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(255,96,52,0.1);
+        }
+        .form-input::placeholder {
+            color: #bbb;
+        }
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        @media (max-width: 576px) {
+            .payment-methods {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .payment-method {
+            position: relative;
+            padding: 14px 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .payment-method:hover {
+            border-color: #ffaa8a;
+        }
+        .payment-method.selected {
+            border-color: var(--primary-color);
+            background: rgba(255,96,52,0.05);
+        }
+        .payment-method.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f9f9f9;
+        }
+        .payment-method input {
+            position: absolute;
+            opacity: 0;
+        }
+        .payment-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+        .payment-icon.card { color: #1890ff; }
+        .payment-icon.stripe { color: #635bff; }
+        .payment-icon.paypal { color: #003087; }
+        .payment-icon.wechat { color: #07c160; }
+        .payment-icon.alipay { color: #1677ff; }
+        .payment-name {
+            font-size: 12px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .payment-method.selected .payment-name {
+            color: var(--primary-color);
+        }
+        .order-summary {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+        }
+        .summary-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .summary-title i {
+            color: var(--primary-color);
+        }
+        .order-items {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            padding-right: 8px;
+        }
+        .order-items::-webkit-scrollbar {
+            width: 4px;
+        }
+        .order-items::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 4px;
+        }
+        .order-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        .order-item-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #f8f8f8;
+        }
+        .order-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .order-item-name {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .order-item-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .order-item-price {
+            font-size: 14px;
+            color: #ff4d4f;
+            font-weight: 600;
+            text-align: right;
+        }
+        .order-item-price::before {
+            content: '¥';
+            font-size: 11px;
+        }
+        .summary-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 16px 0;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .summary-row.total {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 2px dashed #e8e8e8;
+        }
+        .summary-row .label {
+            color: var(--text-secondary);
+        }
+        .summary-row .value {
+            color: var(--text-primary);
+        }
+        .summary-row.total .value {
+            color: #ff4d4f;
+            font-size: 24px;
+        }
+        .summary-row.total .value::before {
+            content: '¥';
+            font-size: 14px;
+        }
+        .checkout-btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            background: linear-gradient(135deg, #ff6034, #ff8c42);
+            color: white;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .checkout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,96,52,0.4);
+        }
+        .secure-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .secure-badge i {
+            color: #52c41a;
+        }
+    </style>
+
+    <div class="checkout-container">
+        <div class="checkout-header">
+            <h1 class="checkout-title">
+                <i class="fas fa-lock"></i>
+                安全结账
+            </h1>
+            <div class="checkout-steps">
+                <div class="step-item completed">
+                    <div class="step-dot"><i class="fas fa-check"></i></div>
+                    <span>购物车</span>
                 </div>
-                <label for="street" class="mb-3 mt-3 col-12 form-label">
-                    <input type="text" class="form-control" placeholder="Street" name="street" value="7th street"
-                           id="street">
-                </label>
-                <label for="zipcode" class="mb-3 mt-3 form-label col-12">
-                    <input type="text" class="form-control" id="zipcode" name="zipcode" placeholder="zipcode"
-                           value="310000">
-                </label>
-                <div class="mb-3 mt-3 col-12 row">
-                    <label for="city" class="col-md-6 col-sm-12">
-                        <input type="text" id="city" class="form-control" placeholder="City" name="city"
-                               value="hangzhou">
-                    </label>
-                    <label for="province" class="col-md-6 col-sm-12">
-                        <input type="text" id="province" class="form-control" name="province" placeholder="Province"
-                               value="zhejiang">
-                    </label>
+                <div class="step-line completed"></div>
+                <div class="step-item active">
+                    <div class="step-dot">2</div>
+                    <span>确认订单</span>
                 </div>
-                <label for="country" class="mb-3 mt-3 form-label col-12">
-                    <input type="text" class="form-control" id="country" name="country" placeholder="Country"
-                           value="china">
-                </label>
-                <h4 class="mb-3 mt-3">
-                    Payment
-                </h4>
-                <label for="card-num" class="form-label col-12">
-                    <input type="text" id="card-num" class="form-control" name="cardNum" placeholder="Card number"
-                           value="424242424242424242">
-                </label>
-                <div class="mb-3 mt-3 col-12 row">
-                    <label for="expiration-month" class="col-md-4 col-sm-12">
-                        <input type="text" id="expiration-month" name="expirationMonth" class="form-control"
-                               placeholder="Expiration Month" value="12">
-                    </label>
-                    <label for="expiration-year" class="col-md-4 col-sm-12">
-                        <input type="text" id="expiration-year" name="expirationYear" class="form-control"
-                               placeholder="Expiration Year" value="2030">
-                    </label>
-                    <label for="cvv" class="col-md-4 col-sm-12">
-                        <input type="text" id="cvv" class="form-control" name="cvv" placeholder="cvv" required>
-                    </label>
+                <div class="step-line"></div>
+                <div class="step-item">
+                    <div class="step-dot">3</div>
+                    <span>支付完成</span>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="payment" id="card" value="card" checked>
-                    <label class="form-check-label" for="card">
-                        Card
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="payment" id="stripe" value="stripe" disabled>
-                    <label class="form-check-label" for="stripe">
-                        Stripe
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="payment" id="paypal" value="paypal" disabled>
-                    <label class="form-check-label" for="paypal">
-                        Paypal
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="payment" id="wechat" value="wechat" disabled>
-                    <label class="form-check-label" for="wechat">
-                        Wechat
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="payment" id="alipay" value="alipay" disabled>
-                    <label class="form-check-label" for="alipay">
-                        Alipay
-                    </label>
-                </div>
-                <div class="mt-3 mb-3">
-                    <div class="float-end">
-                        <div class="m-3 text-danger">Total: ${{ .total }}</div>
-                        <input type="submit" class="btn btn-success" value="Pay">
+            </div>
+        </div>
+
+        <div class="checkout-body">
+            <form method="post" action="/checkout/waiting" class="checkout-form">
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-envelope"></i>
+                        联系方式
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">电子邮箱</label>
+                        <input type="email" class="form-input" name="email" placeholder="请输入您的邮箱地址" value="abc@example.com" required>
                     </div>
                 </div>
-            </form>
-        </div>
-        <ul class="list-group col-lg-4 col-sm-12">
-            {{ range $.items }}
-                <li class="list-group-item">
-                    <div class="card border-0">
-                        <div class="card-body row">
-                            <div class="col-4">
-                                <img src="{{ .Picture }}" style="max-width: 100px;max-height: 50px" alt="">
+
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-truck"></i>
+                        配送信息
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">姓</label>
+                            <input type="text" class="form-input" name="firstname" placeholder="请输入姓" value="张" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">名</label>
+                            <input type="text" class="form-input" name="lastname" placeholder="请输入名" value="三" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">详细地址</label>
+                        <input type="text" class="form-input" name="street" placeholder="街道、门牌号等" value="文三路 138 号" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">邮政编码</label>
+                            <input type="text" class="form-input" name="zipcode" placeholder="邮政编码" value="310000" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">城市</label>
+                            <input type="text" class="form-input" name="city" placeholder="城市" value="杭州" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">省份</label>
+                            <input type="text" class="form-input" name="province" placeholder="省份" value="浙江" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">国家/地区</label>
+                            <input type="text" class="form-input" name="country" placeholder="国家/地区" value="中国" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-credit-card"></i>
+                        支付方式
+                    </div>
+                    <div class="payment-methods">
+                        <label class="payment-method selected">
+                            <input type="radio" name="payment" value="card" checked>
+                            <div class="payment-icon card"><i class="fas fa-credit-card"></i></div>
+                            <div class="payment-name">银行卡</div>
+                        </label>
+                        <label class="payment-method disabled">
+                            <input type="radio" name="payment" value="stripe" disabled>
+                            <div class="payment-icon stripe"><i class="fab fa-stripe-s"></i></div>
+                            <div class="payment-name">Stripe</div>
+                        </label>
+                        <label class="payment-method disabled">
+                            <input type="radio" name="payment" value="paypal" disabled>
+                            <div class="payment-icon paypal"><i class="fab fa-paypal"></i></div>
+                            <div class="payment-name">PayPal</div>
+                        </label>
+                        <label class="payment-method disabled">
+                            <input type="radio" name="payment" value="wechat" disabled>
+                            <div class="payment-icon wechat"><i class="fab fa-weixin"></i></div>
+                            <div class="payment-name">微信支付</div>
+                        </label>
+                        <label class="payment-method disabled">
+                            <input type="radio" name="payment" value="alipay" disabled>
+                            <div class="payment-icon alipay"><i class="fab fa-alipay"></i></div>
+                            <div class="payment-name">支付宝</div>
+                        </label>
+                    </div>
+                    
+                    <div style="margin-top: 16px;" id="cardForm">
+                        <div class="form-group">
+                            <label class="form-label">卡号</label>
+                            <input type="text" class="form-input" name="cardNum" placeholder="请输入银行卡号" value="4242424242424242" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">有效期（月）</label>
+                                <input type="text" class="form-input" name="expirationMonth" placeholder="MM" value="12" required>
                             </div>
-                            <div class="col-8">
-                                <div class="mt-1">{{ .Name }}</div>
-                                <div class="mt-1">Single Price: ${{ .Price }}</div>
-                                <div class="mt-1">Qty: {{ .Qty }}</div>
+                            <div class="form-group">
+                                <label class="form-label">有效期（年）</label>
+                                <input type="text" class="form-input" name="expirationYear" placeholder="YYYY" value="2030" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">CVV</label>
+                                <input type="text" class="form-input" name="cvv" placeholder="安全码" required>
                             </div>
                         </div>
                     </div>
-                </li>
-            {{ end}}
-        </ul>
-    </div>
-    {{ template "footer" . }}
+                </div>
 
+                <button type="submit" class="checkout-btn">
+                    <i class="fas fa-lock"></i>
+                    确认支付
+                </button>
+            </form>
+
+            <div class="order-summary">
+                <div class="summary-title">
+                    <i class="fas fa-shopping-bag"></i>
+                    订单详情
+                </div>
+                <div class="order-items">
+                    {{ range $.items }}
+                    <div class="order-item">
+                        <img src="{{ .Picture }}" class="order-item-img" alt="{{ .Name }}">
+                        <div class="order-item-info">
+                            <div class="order-item-name">{{ .Name }}</div>
+                            <div class="order-item-meta">数量: {{ .Qty }} × ¥{{ printf "%.2f" .Price }}</div>
+                            <div class="order-item-price">¥{{ printf "%.2f" .Price }}</div>
+                        </div>
+                        {{ end }}
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row">
+                    <span class="label">商品小计</span>
+                    <span class="value">¥{{ .total }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">运费</span>
+                    <span class="value" style="color: #52c41a;">免运费</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">优惠</span>
+                    <span class="value" style="color: #52c41a;">-¥0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span class="label">应付总额</span>
+                    <span class="value">{{ .total }}</span>
+                </div>
+                <div class="secure-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>SSL 安全加密传输</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.payment-method:not(.disabled)').forEach(function(method) {
+            method.addEventListener('click', function() {
+                document.querySelectorAll('.payment-method').forEach(function(m) {
+                    m.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+    </script>
+
+    {{ template "footer" . }}
 {{ end }}

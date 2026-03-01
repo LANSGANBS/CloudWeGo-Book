@@ -16,16 +16,16 @@ package main
 
 import (
 	"net"
-	"strings"
 
 	"github.com/joho/godotenv"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/cloudwego/biz-demo/gomall/app/email/biz/consumer"
+	"github.com/cloudwego/biz-demo/gomall/app/email/biz/dal"
 	"github.com/cloudwego/biz-demo/gomall/app/email/conf"
 	"github.com/cloudwego/biz-demo/gomall/app/email/infra/mq"
 	"github.com/cloudwego/biz-demo/gomall/common/mtl"
-	"github.com/cloudwego/biz-demo/gomall/common/utils"
+	"github.com/cloudwego/biz-demo/gomall/common/serversuite"
 	"github.com/cloudwego/biz-demo/gomall/rpc_gen/kitex_gen/email/emailservice"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
@@ -37,7 +37,6 @@ var serviceName = conf.GetConf().Kitex.Service
 
 func main() {
 	_ = godotenv.Load()
-	opts := kitexInit()
 
 	mtl.InitLog(&lumberjack.Logger{
 		Filename:   conf.GetConf().Kitex.LogFileName,
@@ -47,8 +46,11 @@ func main() {
 	})
 	mtl.InitTracing(serviceName)
 	mtl.InitMetric(serviceName, conf.GetConf().Kitex.MetricsPort, conf.GetConf().Registry.RegistryAddress[0])
+	dal.Init()
 	mq.Init()
 	consumer.Init()
+	opts := kitexInit()
+
 	svr := emailservice.NewServer(new(EmailServiceImpl), opts...)
 
 	err := svr.Run()
@@ -60,15 +62,11 @@ func main() {
 func kitexInit() (opts []server.Option) {
 	// address
 	address := conf.GetConf().Kitex.Address
-	if strings.HasPrefix(address, ":") {
-		localIp := utils.MustGetLocalIPv4()
-		address = localIp + address
-	}
 	addr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		panic(err)
 	}
-	opts = append(opts, server.WithServiceAddr(addr))
+	opts = append(opts, server.WithServiceAddr(addr), server.WithSuite(serversuite.CommonServerSuite{CurrentServiceName: serviceName, RegistryAddr: conf.GetConf().Registry.RegistryAddress[0]}))
 
 	_ = provider.NewOpenTelemetryProvider(
 		provider.WithSdkTracerProvider(mtl.TracerProvider),

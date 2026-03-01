@@ -44,3 +44,40 @@ func (s *ProductCatalogServiceImpl) SearchProducts(ctx context.Context, req *pro
 
 	return resp, err
 }
+
+// IncrementSales implements the ProductCatalogServiceImpl interface.
+func (s *ProductCatalogServiceImpl) IncrementSales(ctx context.Context, req *product.IncrementSalesReq) (resp *product.IncrementSalesResp, err error) {
+	resp, err = service.NewIncrementSalesService(ctx).Run(req)
+
+	return resp, err
+}
+
+// CreateProduct implements the ProductCatalogServiceImpl interface.
+func (s *ProductCatalogServiceImpl) CreateProduct(ctx context.Context, req *product.CreateProductReq) (resp *product.CreateProductResp, err error) {
+	resp = &product.CreateProductResp{}
+	return resp, err
+}
+
+// UpdateProduct implements the ProductCatalogServiceImpl interface.
+func (s *ProductCatalogServiceImpl) UpdateProduct(ctx context.Context, req *product.UpdateProductReq) (resp *product.UpdateProductResp, err error) {
+	resp = &product.UpdateProductResp{}
+	return resp, err
+}
+
+// DeductStock implements the ProductCatalogServiceImpl interface.
+func (s *ProductCatalogServiceImpl) DeductStock(ctx context.Context, req *product.DeductStockReq) (resp *product.DeductStockResp, err error) {
+	resp, err = service.NewDeductStockService(ctx).Run(req)
+	return resp, err
+}
+
+// RestoreStock implements the ProductCatalogServiceImpl interface.
+func (s *ProductCatalogServiceImpl) RestoreStock(ctx context.Context, req *product.RestoreStockReq) (resp *product.RestoreStockResp, err error) {
+	resp, err = service.NewRestoreStockService(ctx).Run(req)
+	return resp, err
+}
+
+// GetStock implements the ProductCatalogServiceImpl interface.
+func (s *ProductCatalogServiceImpl) GetStock(ctx context.Context, req *product.GetStockReq) (resp *product.GetStockResp, err error) {
+	resp, err = service.NewGetStockService(ctx).Run(req)
+	return resp, err
+}

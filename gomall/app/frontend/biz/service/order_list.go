@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	common "github.com/cloudwego/biz-demo/gomall/app/frontend/hertz_gen/frontend/common"
@@ -60,7 +61,7 @@ func (h *OrderListService) Run(req *common.Empty) (resp map[string]any, err erro
 				i := vv.Item
 				productResp, err := rpc.ProductClient.GetProduct(h.Context, &rpcproduct.GetProductReq{Id: i.ProductId})
 				if err != nil {
-					return nil, err
+					continue
 				}
 				if productResp.Product == nil {
 					continue
@@ -75,15 +76,21 @@ func (h *OrderListService) Run(req *common.Empty) (resp map[string]any, err erro
 				})
 			}
 		}
-		timeObj := time.Unix(int64(v.CreatedAt), 0)
+		createdAt := int64(v.CreatedAt)
+		timeObj := time.Unix(createdAt, 0)
 		orders = append(orders, &types.Order{
 			Cost:        total,
 			Items:       items,
 			CreatedDate: timeObj.Format("2006-01-02 15:04:05"),
+			CreatedAt:   createdAt,
 			OrderId:     v.OrderId,
 			Consignee:   types.Consignee{Email: v.Email},
 		})
 	}
+
+	sort.Slice(orders, func(i, j int) bool {
+		return orders[i].CreatedAt > orders[j].CreatedAt
+	})
 
 	return utils.H{
 		"title":  "Order",

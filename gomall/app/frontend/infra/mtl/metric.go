@@ -39,27 +39,35 @@ func initMetric() route.CtxCallback {
 	Registry = prometheus.NewRegistry()
 	Registry.MustRegister(collectors.NewGoCollector())
 	Registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-	config := consulapi.DefaultConfig()
-	config.Address = conf.GetConf().Hertz.RegistryAddr
-	consulClient, _ := consulapi.NewClient(config)
-	r := consul.NewConsulRegister(consulClient, consul.WithAdditionInfo(&consul.AdditionInfo{
-		Tags: []string{"service:frontend"},
-	}))
 
-	localIp := utils.MustGetLocalIPv4()
-	ip, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", localIp, conf.GetConf().Hertz.MetricsPort))
-	if err != nil {
-		hlog.Error(err)
-	}
-	registryInfo := &registry.Info{Addr: ip, ServiceName: "prometheus", Weight: 1}
-	err = r.Register(registryInfo)
-	if err != nil {
-		hlog.Error(err)
-	}
+	go func() {
+		config := consulapi.DefaultConfig()
+		config.Address = conf.GetConf().Hertz.RegistryAddr
+		consulClient, err := consulapi.NewClient(config)
+		if err != nil {
+			hlog.Warnf("Failed to create consul client for metrics: %v", err)
+			return
+		}
+		r := consul.NewConsulRegister(consulClient, consul.WithAdditionInfo(&consul.AdditionInfo{
+			Tags: []string{"service:frontend"},
+		}))
+
+		localIp := utils.MustGetLocalIPv4()
+		ip, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", localIp, conf.GetConf().Hertz.MetricsPort))
+		if err != nil {
+			hlog.Warnf("Failed to resolve metrics address: %v", err)
+			return
+		}
+		registryInfo := &registry.Info{Addr: ip, ServiceName: "prometheus", Weight: 1}
+		err = r.Register(registryInfo)
+		if err != nil {
+			hlog.Warnf("Failed to register prometheus to consul: %v", err)
+		} else {
+			hlog.Infof("Registered prometheus to consul successfully")
+		}
+	}()
 
 	http.Handle("/metrics", promhttp.HandlerFor(Registry, promhttp.HandlerOpts{}))
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.GetConf().Hertz.MetricsPort), nil) //nolint:errcheck
-	return func(ctx context.Context) {
-		r.Deregister(registryInfo) //nolint:errcheck
-	}
+	return func(ctx context.Context) {}
 }

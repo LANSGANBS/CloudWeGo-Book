@@ -1,12 +1,19 @@
 {{ define "footer" }}
-
-    </div>
+        </div>
     </main>
-    <footer class="py-5 bg-primary text-white">
-        <div class="footer-top">
-            <div class="container footer-social">
-                <p>© 2023 CloudWeGo (<a class="text-white"
-                                        href="https://github.com/cloudwego">Source Code</a>)</p>
+    <footer class="py-4 mt-4" style="background: var(--card-bg); border-top: 1px solid #eee;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                    <span style="color: var(--text-secondary); font-size: 13px;">
+                        © 2024 CloudWeGo Shop - 
+                        <a href="https://github.com/cloudwego/biz-demo" style="color: var(--primary-color); text-decoration: none;">源码</a>
+                    </span>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <a href="/about" style="color: var(--text-secondary); font-size: 13px; text-decoration: none; margin-right: 16px;">关于我们</a>
+                    <a href="/admin" style="color: var(--text-secondary); font-size: 13px; text-decoration: none;">管理后台</a>
+                </div>
             </div>
         </div>
     </footer>
@@ -14,6 +21,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"
             integrity="sha512-GWzVrcGlo0TxTRvz9ttioyYJ+Wwk9Ck0G81D+eO63BaqHaJ3YZX9wuqjwgfcV/MrB2PhaVX9DkYVhbFpStnqpQ=="
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    </body>
-    </html>
+</body>
+</html>
 {{ end }}

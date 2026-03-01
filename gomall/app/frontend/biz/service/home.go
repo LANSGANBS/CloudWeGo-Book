@@ -38,7 +38,11 @@ func (h *HomeService) Run(req *common.Empty) (res map[string]any, err error) {
 	ctx := h.Context
 	p, err := rpc.ProductClient.ListProducts(ctx, &product.ListProductsReq{})
 	if err != nil {
-		klog.Error(err)
+		klog.Errorf("HomeService: ListProducts RPC error: %v", err)
+	} else {
+		for _, item := range p.Products {
+			klog.Infof("HomeService: Product ID=%d, Name=%s, Sales=%d", item.Id, item.Name, item.Sales)
+		}
 	}
 	var cartNum int
 	return utils.H{

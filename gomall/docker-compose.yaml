@@ -5,9 +5,10 @@ services:
     ports:
       - 3306:3306
     environment:
-      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=123456
     volumes:
       - ./db/sql/ini:/docker-entrypoint-initdb.d
+      - ./sql:/sql
   redis:
     image: 'redis:latest'
     ports:
@@ -18,7 +19,6 @@ services:
       - "8500:8500"
     environment:
       CONSUL_BIND_INTERFACE: eth0
-  # Jaeger
   jaeger-all-in-one:
     container_name: jaeger-all-in-one
     image: jaegertracing/all-in-one:latest
@@ -46,7 +46,6 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
-
   grafana:
     image: grafana/grafana:latest
     environment:
@@ -55,7 +54,6 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     ports:
       - "3000:3000"
-
   loki:
     image: grafana/loki:2.9.2
     volumes:
@@ -63,7 +61,6 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
-
   promtail:
     image: grafana/promtail:2.9.2
     volumes:

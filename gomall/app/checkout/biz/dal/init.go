@@ -17,9 +17,11 @@ package dal
 import (
 	"github.com/cloudwego/biz-demo/gomall/app/checkout/biz/dal/mysql"
 	"github.com/cloudwego/biz-demo/gomall/app/checkout/biz/dal/redis"
+	"github.com/cloudwego/biz-demo/gomall/app/checkout/biz/message"
 )
 
 func Init() {
 	redis.Init()
 	mysql.Init()
+	message.Init()
 }

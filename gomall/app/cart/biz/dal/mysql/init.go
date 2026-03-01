@@ -15,7 +15,6 @@
 package mysql
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/cloudwego/biz-demo/gomall/common/mtl"
@@ -33,7 +32,7 @@ var (
 )
 
 func Init() {
-	DB, err = gorm.Open(mysql.Open(fmt.Sprintf(conf.GetConf().MySQL.DSN, os.Getenv("MYSQL_USER"), os.Getenv("MYSQL_PASSWORD"), os.Getenv("MYSQL_HOST"))),
+	DB, err = gorm.Open(mysql.Open(conf.GetConf().MySQL.DSN),
 		&gorm.Config{
 			PrepareStmt:            true,
 			SkipDefaultTransaction: true,

@@ -38,7 +38,7 @@ func OrderList(ctx context.Context, c *app.RequestContext) {
 
 	resp, err := service.NewOrderListService(ctx, c).Run(&req)
 	if err != nil {
-		c.HTML(consts.StatusOK, "order", hertzUtils.H{"error": err})
+		c.HTML(consts.StatusOK, "order", utils.WarpResponse(ctx, c, hertzUtils.H{"error": err}))
 		return
 	}
 

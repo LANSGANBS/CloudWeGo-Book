@@ -28,6 +28,7 @@ type Order struct {
 	Consignee   Consignee
 	OrderId     string
 	CreatedDate string
+	CreatedAt   int64
 	OrderState  string
 	Cost        float32
 	Items       []OrderItem

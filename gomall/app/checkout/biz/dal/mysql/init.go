@@ -18,6 +18,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
+	"github.com/cloudwego/biz-demo/gomall/app/checkout/biz/model"
 	"github.com/cloudwego/biz-demo/gomall/app/checkout/conf"
 )
 
@@ -36,4 +37,10 @@ func Init() {
 	if err != nil {
 		panic(err)
 	}
+	
+	DB.AutoMigrate(
+		&model.LocalMessage{},
+		&model.MessageDeadLetter{},
+		&model.MessageRetryLog{},
+	)
 }

@@ -1,0 +1,24 @@
+version: '3'
+services:
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.1.0
+    container_name: rocketmq-namesrv
+    ports:
+      - "9876:9876"
+    command: sh mqnamesrv
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.0
+    container_name: rocketmq-broker
+    ports:
+      - "10911:10911"
+      - "10909:10909"
+    environment:
+      - NAMESRV_ADDR=rocketmq-namesrv:9876
+    volumes:
+      - ./broker.conf:/home/rocketmq/rocketmq-5.1.0/conf/broker.conf
+    command: sh mqbroker -n rocketmq-namesrv:9876 -c /home/rocketmq/rocketmq-5.1.0/conf/broker.conf
+    depends_on:
+      - rocketmq-namesrv
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

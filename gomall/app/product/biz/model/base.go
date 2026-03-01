@@ -14,10 +14,15 @@
 
 package model
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Base struct {
-	ID        int `gorm:"primarykey"`
+	ID        uint           `gorm:"primarykey"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }

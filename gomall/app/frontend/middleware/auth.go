@@ -18,8 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cloudwego/biz-demo/gomall/app/frontend/infra/rpc"
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/utils"
 	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"github.com/hertz-contrib/sessions"
 )
 
@@ -55,6 +57,52 @@ func Auth() app.HandlerFunc {
 			return
 		}
 		ctx = context.WithValue(ctx, utils.UserIdKey, userId)
+		c.Next(ctx)
+	}
+}
+
+func AdminAuth() app.HandlerFunc {
+	return func(ctx context.Context, c *app.RequestContext) {
+		session := sessions.Default(c)
+		userId := session.Get("user_id")
+		if userId == nil {
+			hlog.CtxInfof(ctx, "Admin access denied: not logged in")
+			c.Redirect(302, []byte("/sign-in?next=/admin"))
+			c.Abort()
+			return
+		}
+
+		uid, ok := userId.(float64)
+		if !ok {
+			hlog.CtxErrorf(ctx, "Invalid user_id type in session")
+			c.Redirect(302, []byte("/sign-in?next=/admin"))
+			c.Abort()
+			return
+		}
+
+		isAdmin, err := rpc.CheckAdmin(ctx, uint32(uid))
+		if err != nil {
+			hlog.CtxErrorf(ctx, "Failed to check admin status: %v", err)
+			c.HTML(500, "error", map[string]interface{}{
+				"title":   "错误",
+				"message": "服务器内部错误",
+			})
+			c.Abort()
+			return
+		}
+
+		if !isAdmin {
+			hlog.CtxInfof(ctx, "Admin access denied for user %d: not admin", uint32(uid))
+			c.HTML(403, "error", map[string]interface{}{
+				"title":   "访问被拒绝",
+				"message": "您没有权限访问此页面",
+			})
+			c.Abort()
+			return
+		}
+
+		ctx = context.WithValue(ctx, utils.UserIdKey, userId)
+		ctx = context.WithValue(ctx, utils.IsAdminKey, true)
 		c.Next(ctx)
 	}
 }

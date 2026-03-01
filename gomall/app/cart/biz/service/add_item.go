@@ -35,7 +35,14 @@ func NewAddItemService(ctx context.Context) *AddItemService {
 
 // Run create note info
 func (s *AddItemService) Run(req *cart.AddItemReq) (resp *cart.AddItemResp, err error) {
-	// Finish your business logic.
+	if req.Item.Quantity <= 0 {
+		err = model.DeleteCartItem(mysql.DB, s.ctx, req.UserId, req.Item.ProductId)
+		if err != nil {
+			return nil, kerrors.NewBizStatusError(50000, err.Error())
+		}
+		return &cart.AddItemResp{}, nil
+	}
+
 	getProduct, err := rpc.ProductClient.GetProduct(s.ctx, &product.GetProductReq{Id: req.Item.GetProductId()})
 	if err != nil {
 		return nil, err

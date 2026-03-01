@@ -39,7 +39,7 @@ func Register(ctx context.Context, c *app.RequestContext) {
 
 	_, err = service.NewRegisterService(ctx, c).Run(&req)
 	if err != nil {
-		c.HTML(consts.StatusOK, "sign-up", hertzUtils.H{"error": err})
+		c.HTML(consts.StatusOK, "sign-up", utils.WarpResponse(ctx, c, hertzUtils.H{"error": err}))
 		return
 	}
 	c.Redirect(consts.StatusFound, []byte("/"))

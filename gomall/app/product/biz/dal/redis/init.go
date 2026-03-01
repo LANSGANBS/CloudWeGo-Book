@@ -44,4 +44,8 @@ func Init() {
 		klog.Error("redis metric collect error ", err)
 	}
 	redisotel.InstrumentTracing(RedisClient) //nolint:errcheck
+	
+	if err := InitLuaScripts(); err != nil {
+		klog.Errorf("failed to load lua scripts: %v", err)
+	}
 }

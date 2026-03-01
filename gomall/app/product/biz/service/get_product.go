@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal/mysql"
-	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal/redis"
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/model"
 	product "github.com/cloudwego/biz-demo/gomall/rpc_gen/kitex_gen/product"
 	"github.com/cloudwego/kitex/pkg/kerrors"
@@ -33,15 +32,22 @@ func NewGetProductService(ctx context.Context) *GetProductService {
 
 // Run create note info
 func (s *GetProductService) Run(req *product.GetProductReq) (resp *product.GetProductResp, err error) {
-	// Finish your business logic.
 	if req.Id == 0 {
 		return nil, kerrors.NewBizStatusError(40000, "product id is required")
 	}
 
-	p, err := model.NewCachedProductQuery(model.NewProductQuery(s.ctx, mysql.DB), redis.RedisClient).GetById(int(req.Id))
+	p, err := model.NewProductQuery(s.ctx, mysql.DB).GetById(int(req.Id))
 	if err != nil {
 		return nil, err
 	}
+	
+	var stock int64 = 999
+	stockService := NewStockService(s.ctx)
+	stockData, err := stockService.GetStock(uint32(p.ID))
+	if err == nil && stockData != nil {
+		stock = stockData.Available
+	}
+	
 	return &product.GetProductResp{
 		Product: &product.Product{
 			Id:          uint32(p.ID),
@@ -49,6 +55,8 @@ func (s *GetProductService) Run(req *product.GetProductReq) (resp *product.GetPr
 			Price:       p.Price,
 			Description: p.Description,
 			Name:        p.Name,
+			Sales:       uint32(p.Sales),
+			Stock:       stock,
 		},
 	}, err
 }

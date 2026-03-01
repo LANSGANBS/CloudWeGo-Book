@@ -16,14 +16,12 @@ package main
 
 import (
 	"net"
-	"strings"
 
 	"github.com/cloudwego/biz-demo/gomall/app/payment/biz/dal"
 	"github.com/cloudwego/biz-demo/gomall/app/payment/conf"
 	"github.com/cloudwego/biz-demo/gomall/app/payment/middleware"
 	"github.com/cloudwego/biz-demo/gomall/common/mtl"
 	"github.com/cloudwego/biz-demo/gomall/common/serversuite"
-	"github.com/cloudwego/biz-demo/gomall/common/utils"
 	"github.com/cloudwego/biz-demo/gomall/rpc_gen/kitex_gen/payment/paymentservice"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/server"
@@ -57,10 +55,6 @@ func main() {
 func kitexInit() (opts []server.Option) {
 	// address
 	address := conf.GetConf().Kitex.Address
-	if strings.HasPrefix(address, ":") {
-		localIp := utils.MustGetLocalIPv4()
-		address = localIp + address
-	}
 	addr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		panic(err)

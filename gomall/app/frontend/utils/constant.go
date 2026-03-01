@@ -19,3 +19,7 @@ const ServiceName = "frontend"
 type SessionUserIdKey string
 
 const UserIdKey = SessionUserIdKey("user_id")
+
+type ContextIsAdminKey string
+
+const IsAdminKey = ContextIsAdminKey("is_admin")

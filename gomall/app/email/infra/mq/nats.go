@@ -15,6 +15,8 @@
 package mq
 
 import (
+	"github.com/cloudwego/biz-demo/gomall/app/email/conf"
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/nats-io/nats.go"
 )
 
@@ -24,8 +26,10 @@ var (
 )
 
 func Init() {
-	Nc, err = nats.Connect(nats.DefaultURL)
+	Nc, err = nats.Connect(conf.GetConf().NATS.Address)
 	if err != nil {
-		panic(err)
+		klog.Warnf("Failed to connect to NATS: %v, message queue will be disabled", err)
+		return
 	}
+	klog.Infof("Connected to NATS at %s", conf.GetConf().NATS.Address)
 }

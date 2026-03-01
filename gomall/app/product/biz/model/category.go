@@ -32,6 +32,13 @@ func (c Category) TableName() string {
 }
 
 func GetProductsByCategoryName(db *gorm.DB, ctx context.Context, name string) (category []Category, err error) {
-	err = db.WithContext(ctx).Model(&Category{}).Where(&Category{Name: name}).Preload("Products").Find(&category).Error
+	err = db.WithContext(ctx).Model(&Category{}).Where(&Category{Name: name}).Preload("Products", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id, created_at, updated_at, name, description, picture, price, deleted_at, sales").Order("updated_at DESC")
+	}).Find(&category).Error
 	return category, err
+}
+
+func GetAllProductsOrderByTime(db *gorm.DB, ctx context.Context) (products []Product, err error) {
+	err = db.WithContext(ctx).Model(&Product{}).Select("id, created_at, updated_at, name, description, picture, price, deleted_at, sales").Order("updated_at DESC").Find(&products).Error
+	return products, err
 }

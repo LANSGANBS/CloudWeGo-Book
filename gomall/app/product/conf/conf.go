@@ -31,13 +31,18 @@ var (
 )
 
 type Config struct {
-	Env      string
-	Kitex    Kitex    `yaml:"kitex"`
-	MySQL    MySQL    `yaml:"mysql"`
-	Redis    Redis    `yaml:"redis"`
-	Registry Registry `yaml:"registry"`
-	// Centralized Config Server
+	Env       string
+	Kitex     Kitex     `yaml:"kitex"`
+	MySQL     MySQL     `yaml:"mysql"`
+	Redis     Redis     `yaml:"redis"`
+	Registry  Registry  `yaml:"registry"`
+	RocketMQ  RocketMQ  `yaml:"rocketmq"`
 	ConfigServer ConfigServer `yaml:"configServer"`
+}
+
+type RocketMQ struct {
+	Enabled    bool     `yaml:"enabled"`
+	NameServer []string `yaml:"name_server"`
 }
 
 type MySQL struct {

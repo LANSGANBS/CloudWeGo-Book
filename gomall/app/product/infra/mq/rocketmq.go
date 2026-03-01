@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"github.com/apache/rocketmq-client-go/v2/rlog"
+	"github.com/cloudwego/biz-demo/gomall/app/product/conf"
 	"github.com/cloudwego/kitex/pkg/klog"
 )
 
@@ -24,9 +26,6 @@ var (
 	ProducerInstance rocketmq.Producer
 	consumerInstance rocketmq.PushConsumer
 
-	nameServerAddr = []string{"127.0.0.1:9876"}
-	brokerAddr     = "127.0.0.1:10911"
-
 	once sync.Once
 )
 
@@ -34,13 +33,25 @@ func init() {
 	rlog.SetLogLevel("error")
 }
 
+func getNameServerAddr() []string {
+	cfg := conf.GetConf()
+	if len(cfg.RocketMQ.NameServer) > 0 {
+		return cfg.RocketMQ.NameServer
+	}
+	return []string{"127.0.0.1:9876"}
+}
+
 func InitRocketMQ() error {
 	var initErr error
 	once.Do(func() {
+		nameServerAddr := getNameServerAddr()
+		klog.Infof("Connecting to RocketMQ NameServer: %v", nameServerAddr)
+		
 		p, err := rocketmq.NewProducer(
 			producer.WithNameServer(nameServerAddr),
 			producer.WithRetry(3),
 			producer.WithQueueSelector(NewStockQueueSelector()),
+			producer.WithSendMsgTimeout(10*time.Second),
 		)
 		if err != nil {
 			initErr = fmt.Errorf("failed to create producer: %w", err)
@@ -61,6 +72,9 @@ func InitRocketMQ() error {
 }
 
 func StartConsumer(ctx context.Context, handler func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error)) error {
+	nameServerAddr := getNameServerAddr()
+	klog.Infof("Starting RocketMQ consumer with NameServer: %v", nameServerAddr)
+	
 	var err error
 	consumerInstance, err = rocketmq.NewPushConsumer(
 		consumer.WithNameServer(nameServerAddr),

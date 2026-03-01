@@ -18,6 +18,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"time"
 
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/dal"
 	"github.com/cloudwego/biz-demo/gomall/app/product/biz/service/rag"
@@ -47,21 +48,35 @@ func main() {
 	mtl.InitMetric(serviceName, conf.GetConf().Kitex.MetricsPort, conf.GetConf().Registry.RegistryAddress[0])
 	dal.Init()
 
-	err := mq.InitRocketMQ()
-	if err != nil {
-		klog.Warnf("Failed to initialize RocketMQ: %v", err)
-	} else {
-		klog.Info("RocketMQ initialized successfully")
-		
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		
-		consumer := mq.NewStockConsumer()
+	if conf.GetConf().RocketMQ.Enabled {
+		klog.Info("Initializing RocketMQ...")
+		done := make(chan error, 1)
 		go func() {
-			if err := mq.StartConsumer(ctx, consumer.HandleMessage); err != nil {
-				klog.Errorf("Failed to start RocketMQ consumer: %v", err)
-			}
+			done <- mq.InitRocketMQ()
 		}()
+
+		select {
+		case err := <-done:
+			if err != nil {
+				klog.Warnf("Failed to initialize RocketMQ: %v", err)
+			} else {
+				klog.Info("RocketMQ initialized successfully")
+
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				consumer := mq.NewStockConsumer()
+				go func() {
+					if err := mq.StartConsumer(ctx, consumer.HandleMessage); err != nil {
+						klog.Errorf("Failed to start RocketMQ consumer: %v", err)
+					}
+				}()
+			}
+		case <-time.After(30 * time.Second):
+			klog.Warn("RocketMQ initialization timeout (30s), continuing without RocketMQ")
+		}
+	} else {
+		klog.Info("RocketMQ is disabled, skipping initialization")
 	}
 
 	huggingfaceToken := os.Getenv("SILICONFLOW_API_TOKEN")
@@ -82,11 +97,10 @@ func main() {
 	opts := kitexInit()
 
 	svr := productcatalogservice.NewServer(new(ProductCatalogServiceImpl), opts...)
-	err = svr.Run()
-	if err != nil {
+	if err := svr.Run(); err != nil {
 		klog.Error(err.Error())
 	}
-	
+
 	mq.Shutdown()
 }
 

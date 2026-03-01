@@ -40,4 +40,7 @@ func Register(r *server.Hertz) {
 
 	// 订单管理
 	adminGroup.GET("/orders", append(_adminMw(), admin.Orders)...)
+
+	// 图片管理
+	adminGroup.GET("/images", append(_adminMw(), admin.ListImages)...)
 }

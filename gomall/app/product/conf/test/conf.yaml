@@ -22,3 +22,8 @@ redis:
   username: ""
   password: ""
   db: 0
+
+rocketmq:
+  enabled: true
+  name_server:
+    - "127.0.0.1:9876"

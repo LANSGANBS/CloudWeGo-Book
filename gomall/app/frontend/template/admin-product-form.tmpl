@@ -35,6 +35,15 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
         
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; max-height: 400px; overflow-y: auto; padding: 10px; }
+        .image-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; background: #f8f9fa; }
+        .image-item:hover { border-color: var(--primary-color); transform: scale(1.02); }
+        .image-item.selected { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25); }
+        .image-item img { width: 100%; height: 100%; object-fit: cover; }
+        .image-item .image-name { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .image-item .check-icon { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background: var(--primary-color); border-radius: 50%; display: none; align-items: center; justify-content: center; color: white; font-size: 12px; }
+        .image-item.selected .check-icon { display: flex; }
+        
         @media (max-width: 991.98px) { .admin-sidebar { width: 100%; height: auto; position: relative; } .admin-main { margin-left: 0; } .admin-wrapper { flex-direction: column; } }
     </style>
 </head>
@@ -108,8 +117,13 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label"><i class="fas fa-image me-1"></i>商品图片 <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="productPicture" name="picture" value="{{if .product}}{{.product.Picture}}{{end}}" placeholder="请输入图片URL地址" required>
-                                <div class="form-text">请输入图片的网络地址，如：https://example.com/image.jpg</div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="productPicture" name="picture" value="{{if .product}}{{.product.Picture}}{{end}}" placeholder="请输入图片URL或从图片库选择" required>
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#imagePickerModal">
+                                        <i class="fas fa-images me-1"></i>选择图片
+                                    </button>
+                                </div>
+                                <div class="form-text">点击"选择图片"从图片库选择，或直接输入图片URL</div>
                                 <div class="mt-2" id="imagePreview">
                                     {{if .product}}
                                     <div class="d-flex align-items-center gap-2">
@@ -145,7 +159,40 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <div class="toast-container" id="toastContainer"></div>
+    
+    <div class="modal fade" id="imagePickerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-images me-2"></i>选择图片</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="imageSearch" placeholder="搜索图片名称...">
+                    </div>
+                    <div id="imageGrid" class="image-grid">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p class="mt-2">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <span class="me-auto text-muted small" id="selectedImageName"></span>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="confirmImageBtn" disabled>
+                        <i class="fas fa-check me-1"></i>确认选择
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
+        var selectedImageUrl = '';
+        var allImages = [];
+        
         function showToast(message, type) {
             type = type || 'success';
             var container = document.getElementById('toastContainer');
@@ -159,6 +206,97 @@
                 setTimeout(function() { toast.remove(); }, 300);
             }, 2500);
         }
+        
+        function loadImages() {
+            fetch('/admin/images')
+                .then(r => r.json())
+                .then(d => {
+                    if(d.success) {
+                        allImages = d.images || [];
+                        renderImages(allImages);
+                    } else {
+                        document.getElementById('imageGrid').innerHTML = '<div class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x"></i><p class="mt-2">加载失败</p></div>';
+                    }
+                })
+                .catch(function() {
+                    document.getElementById('imageGrid').innerHTML = '<div class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x"></i><p class="mt-2">加载失败</p></div>';
+                });
+        }
+        
+        function renderImages(images) {
+            var grid = document.getElementById('imageGrid');
+            if(images.length === 0) {
+                grid.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-image fa-2x"></i><p class="mt-2">暂无图片</p></div>';
+                return;
+            }
+            var html = '';
+            for(var i = 0; i < images.length; i++) {
+                var img = images[i];
+                html += '<div class="image-item" data-url="' + img.url + '" data-name="' + img.name + '">' +
+                    '<img src="' + img.url + '" alt="' + img.name + '" loading="lazy">' +
+                    '<div class="image-name">' + img.name + '</div>' +
+                    '<div class="check-icon"><i class="fas fa-check"></i></div>' +
+                '</div>';
+            }
+            grid.innerHTML = html;
+            
+            var items = grid.querySelectorAll('.image-item');
+            for(var j = 0; j < items.length; j++) {
+                items[j].addEventListener('click', function() {
+                    var allItems = grid.querySelectorAll('.image-item');
+                    for(var k = 0; k < allItems.length; k++) {
+                        allItems[k].classList.remove('selected');
+                    }
+                    this.classList.add('selected');
+                    selectedImageUrl = this.dataset.url;
+                    document.getElementById('selectedImageName').textContent = this.dataset.name;
+                    document.getElementById('confirmImageBtn').disabled = false;
+                });
+            }
+        }
+        
+        document.getElementById('imageSearch').addEventListener('input', function(e) {
+            var query = e.target.value.toLowerCase();
+            var filtered = [];
+            for(var i = 0; i < allImages.length; i++) {
+                if(allImages[i].name.toLowerCase().indexOf(query) !== -1) {
+                    filtered.push(allImages[i]);
+                }
+            }
+            renderImages(filtered);
+        });
+        
+        document.getElementById('imagePickerModal').addEventListener('show.bs.modal', function() {
+            selectedImageUrl = '';
+            document.getElementById('selectedImageName').textContent = '';
+            document.getElementById('confirmImageBtn').disabled = true;
+            document.getElementById('imageSearch').value = '';
+            loadImages();
+        });
+        
+        document.getElementById('confirmImageBtn').addEventListener('click', function() {
+            if(selectedImageUrl) {
+                document.getElementById('productPicture').value = selectedImageUrl;
+                updateImagePreview(selectedImageUrl);
+                var modal = bootstrap.Modal.getInstance(document.getElementById('imagePickerModal'));
+                modal.hide();
+            }
+        });
+        
+        function updateImagePreview(url) {
+            var preview = document.getElementById('imagePreview');
+            preview.innerHTML = '<div class="d-flex align-items-center gap-2">' +
+                '<img src="' + url + '" alt="商品图片" class="product-preview" onerror="this.style.display=\'none\'">' +
+                '<span class="text-muted small">已选择</span>' +
+            '</div>';
+        }
+        
+        document.getElementById('productPicture').addEventListener('input', function(e) {
+            if(e.target.value) {
+                updateImagePreview(e.target.value);
+            }
+        });
+        
         document.getElementById('productForm').addEventListener('submit', function(e) {
             e.preventDefault();
             var formData = new FormData(this);
@@ -172,7 +310,7 @@
                         showToast('保存失败: ' + d.message, 'error');
                     }
                 })
-                .catch(e => showToast('保存失败: ' + e, 'error'));
+                .catch(function(err) { showToast('保存失败: ' + err, 'error'); });
         });
     </script>
 </body>

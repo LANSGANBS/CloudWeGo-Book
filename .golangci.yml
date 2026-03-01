@@ -31,9 +31,3 @@ linters:
     - govet
     - staticcheck
     - unused
-
-linters-settings:
-  govet:
-    check-shadowing: false
-  staticcheck:
-    checks: ["-SA1000", "-SA6002"]

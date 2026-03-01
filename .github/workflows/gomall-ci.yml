@@ -6,12 +6,14 @@ on:
     paths:
       - 'gomall/**'
       - '.github/workflows/gomall-ci.yml'
+      - '.golangci.yml'
       - 'hack/gomall-*'
   pull_request:
     branches: [main, master]
     paths:
       - 'gomall/**'
       - '.github/workflows/gomall-ci.yml'
+      - '.golangci.yml'
       - 'hack/gomall-*'
 
 permissions:

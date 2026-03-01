@@ -23,8 +23,21 @@ env:
 
 jobs:
   lint:
-    name: Lint
+    name: Lint ${{ matrix.module }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - app/cart
+          - app/checkout
+          - app/email
+          - app/frontend
+          - app/order
+          - app/payment
+          - app/product
+          - app/user
+          - common
     steps:
       - uses: actions/checkout@v4
 
@@ -36,8 +49,8 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          working-directory: gomall
-          args: --config=${{ github.workspace }}/.golangci.yml --timeout=10m
+          working-directory: gomall/${{ matrix.module }}
+          args: --config=${{ github.workspace }}/.golangci.yml --timeout=5m
 
   test:
     name: Test

@@ -1,0 +1,100 @@
+name: Gomall CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'gomall/**'
+      - '.github/workflows/gomall-ci.yml'
+      - 'hack/gomall-*'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'gomall/**'
+      - '.github/workflows/gomall-ci.yml'
+      - 'hack/gomall-*'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  GO_VERSION: '1.23'
+  GOLANGCI_LINT_VERSION: v1.61
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: gomall
+          args: --config=${{ github.workspace }}/.golangci.yml --timeout=10m
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-gomall-${{ hashFiles('gomall/**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-gomall-
+
+      - name: Run tests
+        run: ./hack/gomall-test.sh
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    strategy:
+      matrix:
+        service:
+          - cart
+          - checkout
+          - email
+          - frontend
+          - order
+          - payment
+          - product
+          - user
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build ${{ matrix.service }}
+        working-directory: gomall/app/${{ matrix.service }}
+        run: go build -v ./...
+
+  vet:
+    name: Vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run go vet
+        run: ./hack/gomall-vet.sh

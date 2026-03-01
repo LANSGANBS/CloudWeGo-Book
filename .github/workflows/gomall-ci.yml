@@ -20,7 +20,6 @@ permissions:
 
 env:
   GO_VERSION: '1.23'
-  GOLANGCI_LINT_VERSION: v1.61
 
 jobs:
   lint:
@@ -36,7 +35,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          version: latest
           working-directory: gomall
           args: --config=${{ github.workspace }}/.golangci.yml --timeout=10m
 
@@ -58,7 +57,7 @@ jobs:
             ${{ runner.os }}-go-gomall-
 
       - name: Run tests
-        run: ./hack/gomall-test.sh
+        run: bash ./hack/gomall-test.sh
 
   build:
     name: Build
@@ -97,4 +96,4 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Run go vet
-        run: ./hack/gomall-vet.sh
+        run: bash ./hack/gomall-vet.sh

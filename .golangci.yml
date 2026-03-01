@@ -1,26 +1,61 @@
-version: "2"
 run:
-  timeout: "30m"
+  timeout: 30m
+
+issues:
+  exclude-rules:
+    - path: open-payment-platform/internal/payment/infrastructure/ent
+      linters:
+        - all
+    - path: third_party$
+      linters:
+        - all
+    - path: builtin$
+      linters:
+        - all
+    - path: examples$
+      linters:
+        - all
+    - path: _test\.go
+      linters:
+        - all
+    - linters:
+        - staticcheck
+      text: "SA1000:"
+    - linters:
+        - staticcheck
+      text: "SA6002:"
+    - linters:
+        - revive
+      text: "var-naming:"
+    - linters:
+        - revive
+      text: "exported:"
+    - linters:
+        - revive
+      text: "package-comments:"
+    - linters:
+        - errcheck
+      text: "Close"
+    - linters:
+        - errcheck
+      text: "Flush"
+    - linters:
+        - errcheck
+      text: "Write"
+
 linters:
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    paths:
-      - open-payment-platform/internal/payment/infrastructure/ent
-      - third_party$
-      - builtin$
-      - examples$
-formatters:
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
-  settings:
-    gofumpt:
-      extra-rules: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: github.com/cloudwego/biz-demo

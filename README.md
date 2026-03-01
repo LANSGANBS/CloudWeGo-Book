@@ -1,234 +1,224 @@
-# CloudWeGo Demo for Business
+# CloudWeGo-Book
 
-This repo contains CloudWeGo demos with business logic, providing valuable references for enterprise user using in production.
+基于 [CloudWeGo](https://github.com/cloudwego/biz-demo) 官方示例修改和扩展的微服务实战项目。
 
-Each demo should/may contain multiple CloudWeGo subprojects, e.g. Kitex & Hertz, and demonstrate an individual business scenario.
+本项目在 CloudWeGo 官方 biz-demo 的基础上进行了大量改进和扩展，包含完整的电商系统示例和教程，适合学习 CloudWeGo 技术栈。
 
-## Demo List
+## 项目列表
 
-### 1. Bookinfo
+### 1. Gomall - 电商微服务平台
 
-#### Description
-##### What is it about and what problem does it solve?
-- How to use kitex proxyless in istio?
-- How to implement full-process traffic lane using CloudWeGo?
+#### 简介
+Gomall 是一个教学性质的微服务电商项目，展示了如何使用 CloudWeGo 的 Kitex (RPC) 和 Hertz (HTTP) 框架构建生产级别的微服务架构。项目实现了完整的电商系统，包含 8 个独立服务。
 
-##### What is the business scenario?
-Rewrite **[Bookinfo](https://istio.io/latest/docs/examples/bookinfo/)** project using `hertz`, `kitex`, same as the **[Bookinfo](https://istio.io/latest/docs/examples/bookinfo/)**
+#### 服务架构
 
-> The application displays information about a book, similar to a single catalog entry of an online book store. Displayed on the page is a description of the book, book details (ISBN, number of pages, and so on), and a few book reviews.
+| 服务 | 端口 | 类型 | 描述 |
+|---------|------|------|-------------|
+| **frontend** | 8080 | HTTP | Web 前端服务 |
+| **user** | 8881 | RPC | 用户认证与管理 |
+| **product** | 8882 | RPC | 商品目录与库存 |
+| **cart** | 8883 | RPC | 购物车管理 |
+| **payment** | 8884 | RPC | 支付处理 |
+| **checkout** | 8885 | RPC | 结算编排 |
+| **order** | 8886 | RPC | 订单管理 |
+| **email** | 8887 | RPC | 邮件通知 |
 
-The Bookinfo application is broken into four separate microservices:
+#### 基础设施组件
 
-- **productpage**. The productpage microservice calls the details and reviews **microservices** to populate the page.
-- **details**. The details microservice contains book information.
-- **reviews**. The reviews microservice contains book reviews. It also calls the ratings microservice.
-- **ratings**. The ratings microservice contains book ranking information that accompanies a book review.
+| 组件 | 端口 | 用途 |
+|-----------|------|---------|
+| MySQL | 3306 | 主数据库 |
+| Redis | 6379 | 缓存与会话存储 |
+| Consul | 8500 | 服务发现与注册 |
+| Jaeger | 16686 | 分布式链路追踪 |
+| Prometheus | 9090 | 指标采集 |
+| Grafana | 3000 | 监控面板 |
+| NATS | 4222 | 消息队列 |
+| Loki | 3100 | 日志聚合 |
 
-##### What are the core technologies/projects used?
+#### 技术栈
 
-- [x] Use `istiod` as xDS server for CRD configuration and distribution
-- [x] Use `wire` for dependency injection
-- [x] Use `opentelemetry` for tracing
-- [x] Implement proxyless `flow lane` with [`Kitex-xds`](https://github.com/kitex-contrib/xds) and `opentelemetry baggage`
-- [x] Implement a bookinfo ui using `arco-design` react
+| 技术 | 用途 | 文档 |
+|------------|---------|---------------|
+| [Kitex](https://github.com/cloudwego/kitex) | 高性能 RPC 框架 | [文档](https://www.cloudwego.io/docs/kitex/) |
+| [Hertz](https://github.com/cloudwego/hertz) | 高性能 HTTP 框架 | [文档](https://www.cloudwego.io/docs/hertz/) |
+| [cwgo](https://github.com/cloudwego/cwgo) | CloudWeGo 代码生成工具 | [文档](https://www.cloudwego.io/docs/cwgo/) |
+| [Bootstrap](https://getbootstrap.com/) | 前端 UI 框架 | [文档](https://getbootstrap.com/docs/) |
 
-##### Which CloudWeGo subprojects are used? List all technologies used.
-- [Kitex](https://github.com/cloudwego/kitex)
-- [Hertz](https://github.com/cloudwego/hertz)
-- [kitex-xds](https://github.com/kitex-contrib/xds)
-- [kitex-opentelemetry](https://github.com/kitex-contrib/obs-opentelemetry)
-- [hertz-opentelemetry](https://github.com/hertz-contrib/obs-opentelemetry)
+#### 已实现功能
 
-##### Detailed documentation
-[bookinfo](./bookinfo/README.md)
+- [x] 用户认证与授权
+- [x] 用户注册与登录/登出
+- [x] 商品分类与目录
+- [x] 商品搜索与筛选
+- [x] 购物车管理
+- [x] 实时购物车徽章更新
+- [x] 结算流程
+- [x] 支付处理
+- [x] 订单管理与历史记录
+- [x] 邮件通知 (通过 NATS 异步处理)
+- [x] 会话管理
+- [x] 分布式链路追踪
+- [x] 指标监控
 
-#### Contributors & Maintainers
-[@CoderPoet](https://github.com/CoderPoet)
+#### 教程章节
 
+项目包含循序渐进的教程，帮助学习者逐步掌握微服务开发：
 
-### 2. Open Payment Platform
+- **ch01-ch06**: 基础入门
+- **ch07-ch10**: 服务拆分与 RPC 通信
+- **ch11-ch14**: 中间件集成
+- **ch15-ch17**: 生产级特性
 
-#### Description
-##### What is it about and what problem does it solve?
-- How to use kitex generic call as the http gateway?
-- How to implement Clean Structure of `Go` using kitex?
+#### 详细文档
+- [Gomall README](./gomall/README.md)
+- [教程说明](./gomall/tutorial/README.md)
 
-##### What is the business scenario?
-> The application demonstrates the usage of kitex generic call.
+---
 
-- We build the `generic call` client for each backend server by traversing IDL in Hertz.
-- Hertz will accept the requests with the query path of prefix `/gateway` .
-- `Gateway` handler will process these requests and route them to backend server by `generic call` client.
-- `payment` server is just a sample server using kitex.This service design pkg with `Clean Structure`.
+### 2. Book Shop - 书店系统
 
-##### What are the core technologies/projects used?
+#### 简介
+展示如何在 Kitex 项目中集成中间件 (如 ElasticSearch、Redis 等)，以及如何在不同复杂度的项目中使用 Hertz 和 Kitex 进行代码分层。
 
-- [x] Use `Hertz` as Gateway.
-- [x] Use `Kitex` generic call client route requests.
-- [x] Use `Kitex` as RPC framework to build micro-services.
-- [x] Use `Clean Architecture` for design pkg and code layout.
-- [x] Use `ent` entity framework for implementing repository.
-- [x] Use `wire` for dependency injection
-- [x] Use `Nacos` as service registry.
-- [x] Use `MySQL` as RDBMS.
+#### 业务场景
+电商系统，包含商家管理商品、消费者管理个人账户并下单购买商品。
 
-##### Which CloudWeGo subprojects are used? List all technologies used.
-- [Kitex](https://github.com/cloudwego/kitex)
-- [Hertz](https://github.com/cloudwego/hertz)
-- kitex-layout(coming soon)
+#### 服务架构
+- **facade**: HTTP 服务，处理 HTTP 请求并通过 RPC 调用其他服务
+- **user**: RPC 服务，处理用户管理
+- **item**: RPC 服务，处理商品管理
+- **order**: RPC 服务，处理订单管理
 
-##### Detailed documentation
-[Open Payment Platform](./open-payment-platform/README.md)
+#### 核心技术
+- [x] Hertz 作为网关
+- [x] Kitex 作为 RPC 框架构建微服务
+- [x] Hertz swagger、jwt、pprof、gzip 中间件
+- [x] ETCD 服务注册
+- [x] MySQL 数据库
+- [x] Redis 缓存
+- [x] ElasticSearch 搜索引擎
 
-#### Contributors & Maintainers
-[@baiyutang](https://github.com/baiyutang)
-
-
-### 3. Easy Note
-
-#### Description
-##### What is it about and what problem does it solve?
-- How to get started with Hertz and Kitex collaboration?
-- How to structure projects when using Hertz and Kitex?
-
-##### What is the business scenario?
-Migrate **[easy_note](https://github.com/cloudwego/kitex-examples/tree/main/bizdemo/easy_note)** and optimize the project.
-
-> The application shows a note service that allows users to create, delete, update, and query notes.
-
-The easy_note application is divided into three microservices:
-
-- **demoapi** is an HTTP service that handles HTTP requests and calls other services via RPC.
-- **demouser** is an RPC service that handles user related operations.
-- **demonote** is an RPC service that handles note related operations and calls demouser service via RPC.
-
-##### What are the core technologies/projects used?
-
-- [x] Use `hz` and `kitex` to generate code
-- [x] Use Hertz `requestid`, `jwt`, `pprof`, `gzip` middlewares
-- [x] Use `go-tagexpr` and `thrift-gen-validator` for validating HTTP and RPC request
-- [x] Use `obs-opentelemetry` for tracing
-- [x] Use `etcd` as service registry.
-- [x] Use `GORM` for implementing repository.
-- [x] Use `MySQL` as RDBMS.
-
-##### Which CloudWeGo subprojects are used? List all technologies used.
-- [Hertz](https://github.com/cloudwego/hertz)
-  - [obs-opentelemetry](https://github.com/hertz-contrib/obs-opentelemetry)
-  - [requestid](https://github.com/hertz-contrib/requestid)
-  - [jwt](https://github.com/hertz-contrib/jwt)
-  - [pprof](https://github.com/hertz-contrib/pprof)
-  - [gzip](https://github.com/hertz-contrib/gzip)
-- [Kitex](https://github.com/cloudwego/kitex)
-  - [obs-opentelemetry](https://github.com/kitex-contrib/obs-opentelemetry)
-  - [registry-etcd](https://github.com/kitex-contrib/registry-etcd)
-- [thrift-gen-validator](https://github.com/cloudwego/thrift-gen-validator)
-
-##### Detailed documentation
-[easy_note](./easy_note/README.md)
-
-#### Contributors & Maintainers
-- [@justlorain](https://github.com/justlorain)
-- [@li-jin-gou](https://github.com/li-jin-gou)
-
-### 4. Book Shop
-
-#### Description
-##### What is it about and what problem does it solve?
-- How to integrate middlewares(such as `ElasticSearch`, `Redis`...) in Kitex project?
-- How to layer code in projects of different complexity using Hertz and Kitex?
-
-##### What is the business scenario?
-> The application shows an e-commerce system that includes merchants managing items, consumers managing personal accounts and placing orders to buy items.
-
-The book-shop application is divided into four microservices:
-
-- **facade** is an HTTP service that handles HTTP requests and calls other services via RPC.
-- **user** is an RPC service that handles user managements.
-- **item** is an RPC service that handles item managements.
-- **order** is an RPC service that handles order managements.
-
-##### What are the core technologies/projects used?
-
-- [x] Use `Hertz` as Gateway.
-- [x] Use `Kitex` as RPC framework to build microservices.
-- [x] Use Hertz `swagger`, `jwt`, `pprof`, `gzip` middlewares.
-- [x] Use `ETCD` as service registry.
-- [x] Use `MySQL` as RDBMS.
-- [x] Use `Redis` as cache.
-- [x] Use `ElasticSearch` as search-engine.
-
-##### Which CloudWeGo subprojects are used? List all technologies used.
-
-- [Hertz](https://github.com/cloudwego/hertz)
-  - [swagger](http://github.com/hertz-contrib/swagger)
-  - [jwt](http://github.com/hertz-contrib/jwt)
-  - [pprof](https://github.com/hertz-contrib/pprof)
-  - [gzip](https://github.com/hertz-contrib/gzip)
-- [Kitex](https://github.com/cloudwego/kitex)
-  - [registry-etcd](https://github.com/kitex-contrib/registry-etcd)
-- [sonic](https://github.com/bytedance/sonic)
-
-##### Detailed documentation
+#### 详细文档
 [Book Shop](./book-shop/README.md)
 
-#### Contributors & Maintainers
-[@bodhisatan](https://github.com/bodhisatan)
+---
 
-### 5. [FreeCar](https://github.com/CyanAsterisk/FreeCar)
+### 3. Bookinfo
 
-#### Description
-##### What is it about and what problem does it solve?
-- How to use the idea of domain-driven development to develop in Kitex?
-- How to develop Hertz and Kitex through RPC + AGW mode?
+#### 简介
+展示如何在 Istio 中使用 Kitex proxyless，以及如何使用 CloudWeGo 实现全流程流量泳道。
 
-##### What is the business scenario?
->Time-sharing car rental system kit in the cloud-native era.
+#### 业务场景
+重写 [Bookinfo](https://istio.io/latest/docs/examples/bookinfo/) 项目，应用分为四个微服务：
+- **productpage**: 产品页面微服务，调用 details 和 reviews 微服务
+- **details**: 详情微服务，包含书籍信息
+- **reviews**: 评论微服务，包含书籍评论，调用 ratings 微服务
+- **ratings**: 评分微服务，包含书籍评分信息
 
-The FreeCar application is divided into six microservices:
+#### 核心技术
+- [x] 使用 istiod 作为 xDS 服务器
+- [x] 使用 wire 依赖注入
+- [x] 使用 opentelemetry 链路追踪
+- [x] 使用 Kitex-xds 和 opentelemetry baggage 实现 proxyless 流量泳道
+- [x] 使用 arco-design react 实现前端界面
 
-- **api** is an HTTP service that handles HTTP requests and calls other services via RPC.
-- **user** is an RPC service that handles user related operations.
-- **profile** is an RPC service that handles profile related operations.
-- **blob** is an RPC service that handles blob related operations.
-- **car** is an RPC service that handles car related operations.
-- **trip** is an RPC service that handles trip related operations.
+#### 详细文档
+[Bookinfo](./bookinfo/README.md)
 
-##### What are the core technologies/projects used?
+---
 
-- [x] Use `hz` and `kitex` to generate code
-- [x] Use Hertz `paseto`, `cors`, `gzip`, `http2`, `limiter`, `opensergo`, `pprof`, `websocket` middlewares
-- [x] Use `obs-opentelemetry` for tracing
-- [x] Use `consul` as service registry and config center.
-- [x] Use `GORM` for implementing repository.
-- [x] Use `MySQL` as RDBMS.
-- [x] Use `MongoDB` as DOCDB.
-- [x] Use `Redis` as cache.
-- [x] Use `MinIO` as object storage center.
-- [x] Use `RabbitMQ` as MQ.
-- [x] Implement a [FreeCar-Admin](https://github.com/CyanAsterisk/FreeCar-Admin) using `arco-design` react.
-- [x] Implement a [FreeCar-MP](https://github.com/CyanAsterisk/FreeCar-MP) using WeChat applet.
+### 4. Easy Note - 笔记服务
 
-##### Which CloudWeGo subprojects are used? List all technologies used.
-- [Hertz](https://github.com/cloudwego/hertz)
-  - [obs-opentelemetry](https://github.com/hertz-contrib/obs-opentelemetry)
-  - [registry](https://github.com/hertz-contrib/registry)
-  - [paseto](https://github.com/hertz-contrib/paseto)
-  - [cors](https://github.com/hertz-contrib/cors)
-  - [pprof](https://github.com/hertz-contrib/pprof)
-  - [gzip](https://github.com/hertz-contrib/gzip)
-  - [http2](https://github.com/hertz-contrib/http2)
-  - [limiter](https://github.com/hertz-contrib/limiter)
-  - [opensergo](https://github.com/hertz-contrib/opensergo)
-  - [websocket](https://github.com/hertz-contrib/websocket)
-- [Kitex](https://github.com/cloudwego/kitex)
-  - [obs-opentelemetry](https://github.com/kitex-contrib/obs-opentelemetry)
-  - [registry-consul](https://github.com/kitex-contrib/registry-consul)
+#### 简介
+展示 Hertz 和 Kitex 协作入门，以及项目结构设计。
 
-##### Detailed documentation
-[FreeCar](https://github.com/CyanAsterisk/FreeCar/blob/dev/README.md)
+#### 业务场景
+笔记服务，允许用户创建、删除、更新和查询笔记。
 
-#### Contributors & Maintainers
-- [@L2ncE](https://github.com/L2ncE)
-- [@Claude-Zq](https://github.com/Claude-Zq)
+#### 服务架构
+- **demoapi**: HTTP 服务，处理 HTTP 请求并通过 RPC 调用其他服务
+- **demouser**: RPC 服务，处理用户相关操作
+- **demonote**: RPC 服务，处理笔记相关操作
+
+#### 核心技术
+- [x] 使用 hz 和 kitex 生成代码
+- [x] Hertz requestid、jwt、pprof、gzip 中间件
+- [x] go-tagexpr 和 thrift-gen-validator 验证请求
+- [x] obs-opentelemetry 链路追踪
+- [x] etcd 服务注册
+- [x] GORM 数据库操作
+- [x] MySQL 数据库
+
+#### 详细文档
+[easy_note](./easy_note/README.md)
+
+---
+
+### 5. Open Payment Platform - 开放支付平台
+
+#### 简介
+展示如何使用 Kitex 泛化调用作为 HTTP 网关，以及如何使用 Kitex 实现 Go 的整洁架构。
+
+#### 核心技术
+- [x] Hertz 作为网关
+- [x] Kitex 泛化调用客户端路由请求
+- [x] Kitex 作为 RPC 框架构建微服务
+- [x] 整洁架构设计
+- [x] ent 实体框架
+- [x] wire 依赖注入
+- [x] Nacos 服务注册
+- [x] MySQL 数据库
+
+#### 详细文档
+[Open Payment Platform](./open-payment-platform/README.md)
+
+---
+
+## 快速开始
+
+### 环境要求
+
+- Go 1.23+
+- Docker & Docker Compose
+- IDE (VS Code、GoLand 等)
+
+### 启动 Gomall
+
+```bash
+# 克隆仓库
+git clone https://github.com/LANSGANBS/CloudWeGo-Book.git
+cd CloudWeGo-Book/gomall
+
+# 启动基础设施服务
+docker-compose up -d
+
+# 初始化环境变量
+make init
+
+# 下载依赖
+make tidy
+
+# 启动服务
+make run svc=user
+make run svc=product
+make run svc=frontend
+# ... 其他服务
+```
+
+### 访问应用
+
+- **前端网站**: http://localhost:8080
+- **Consul 控制台**: http://localhost:8500
+- **Jaeger 链路追踪**: http://localhost:16686
+- **Grafana 监控**: http://localhost:3000
+- **Prometheus 指标**: http://localhost:9090
+
+## 致谢
+
+本项目基于 [CloudWeGo biz-demo](https://github.com/cloudwego/biz-demo) 进行修改和扩展，感谢 CloudWeGo 团队提供的优秀示例项目。
+
+## 许可证
+
+[Apache License 2.0](LICENSE)
